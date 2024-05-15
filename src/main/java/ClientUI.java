@@ -1,9 +1,6 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseMotionListener;
+import java.awt.event.*;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -15,13 +12,6 @@ public class ClientUI extends JFrame implements MouseMotionListener {
     private Robot robot;
 
     public ClientUI() throws RemoteException {
-        // Initialisation de la classe Robot pour reproduire les événements de souris
-        try {
-             robot = new Robot();
-        } catch (AWTException e) {
-            System.err.println("Error creating Robot: " + e.getMessage());
-            e.printStackTrace();
-        }
 
         setTitle("Remote Desktop Viewer");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -47,7 +37,31 @@ public class ClientUI extends JFrame implements MouseMotionListener {
         // Ajouter un écouteur de mouvement de souris à la fenêtre
         addMouseMotionListener(this);
 
+        //Envoyer l'action de clic de souris au serveur
+        screenLabel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                try {
+                    // Envoyer l'action de clic de souris pressé au serveur
+                    server.mousePressed(e.getX(), e.getY(), e.getButton());
+                } catch (RemoteException ex) {
+                    ex.printStackTrace();
+                }
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                try {
+                    // Envoyer l'action de clic de souris relâché au serveur
+                    server.mouseReleased(e.getX(), e.getY(), e.getButton());
+                } catch (RemoteException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
     }
+
+
 
     private void startScreenRefresh() {
         ActionListener taskPerformer = new ActionListener() {
@@ -101,4 +115,6 @@ public class ClientUI extends JFrame implements MouseMotionListener {
             ex.printStackTrace();
         }
     }
+
+
 }
