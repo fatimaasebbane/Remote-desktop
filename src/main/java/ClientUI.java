@@ -7,6 +7,7 @@ import java.rmi.registry.Registry;
 
 public class ClientUI extends JFrame implements MouseMotionListener {
     private JLabel screenLabel;
+    private JLabel mousePositionLabel; // Nouvelle étiquette pour afficher la position de la souris
     private Timer timer;
     private RemoteInterface server;
     private Robot robot;
@@ -19,6 +20,10 @@ public class ClientUI extends JFrame implements MouseMotionListener {
 
         screenLabel = new JLabel();
         add(screenLabel, BorderLayout.CENTER);
+
+        // Ajouter l'étiquette pour afficher les coordonnées de la souris
+        mousePositionLabel = new JLabel();
+        add(mousePositionLabel, BorderLayout.SOUTH);
 
         setSize(800, 600);
         setLocationRelativeTo(null);
@@ -61,8 +66,6 @@ public class ClientUI extends JFrame implements MouseMotionListener {
         });
     }
 
-
-
     private void startScreenRefresh() {
         ActionListener taskPerformer = new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
@@ -75,7 +78,7 @@ public class ClientUI extends JFrame implements MouseMotionListener {
 
     private void refreshScreen() {
         try {
-           // Récupération de l'écran distant
+            // Récupération de l'écran distant
             byte[] imageData = server.captureScreen();
             if (imageData != null) {
                 // Convertir les données d'image en ImageIcon
@@ -111,10 +114,11 @@ public class ClientUI extends JFrame implements MouseMotionListener {
             // Récupérer les coordonnées de la souris et les envoyer au serveur
             double[] mouseCoordinates = {e.getX(), e.getY()};
             server.receiveMouseEvent(mouseCoordinates);
+
+            // Mettre à jour l'affichage de la position de la souris
+            mousePositionLabel.setText("Mouse position: " + e.getX() + ", " + e.getY());
         } catch (RemoteException ex) {
             ex.printStackTrace();
         }
     }
-
-
 }
