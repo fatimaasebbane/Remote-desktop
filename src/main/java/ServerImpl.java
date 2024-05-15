@@ -1,17 +1,13 @@
 import javax.imageio.ImageIO;
 import java.awt.*;
-import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.Timer;
 
 public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
     private Robot robot;
-    private Timer timer;
-    RemoteInterface client;
 
     protected ServerImpl() throws RemoteException {
             try {
@@ -39,18 +35,11 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
             return null;
         }
     }
-
     @Override
-    public int[] sendMouseEvent() throws RemoteException {
-        // Capturer les positions de la souris
-        Point mousePosition = MouseInfo.getPointerInfo().getLocation();
-        int mouseX = (int) mousePosition.getX();
-        int mouseY = (int) mousePosition.getY();
-
-        // Créer un tableau contenant les coordonnées X et Y de la souris
-        int[] mouseCoordinates = {mouseX, mouseY};
-
-        // Renvoyer les coordonnées de la souris au client
-        return mouseCoordinates;
+    public void receiveMouseEvent(double[] mouseCoordinates) throws RemoteException {
+        // Déplacer la souris sur le bureau du serveur
+        int x = (int) mouseCoordinates[0];
+        int y = (int) mouseCoordinates[1];
+        robot.mouseMove(x, y);
     }
 }

@@ -2,11 +2,13 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionListener;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 
-public class ClientUI extends JFrame {
+public class ClientUI extends JFrame implements MouseMotionListener {
     private JLabel screenLabel;
     private Timer timer;
     private RemoteInterface server;
@@ -33,8 +35,8 @@ public class ClientUI extends JFrame {
 
         // Connexion au serveur RMI
         try {
-            Registry registry = LocateRegistry.getRegistry("localhost", 1099);
-            server = (RemoteInterface) registry.lookup("Server");
+            Registry registry = LocateRegistry.getRegistry("192.167.137.1", 1099);
+            server = (RemoteInterface) registry.lookup("remoteDesktopServer");
         } catch (Exception e) {
             System.err.println("Client exception: " + e.toString());
             e.printStackTrace();
@@ -42,8 +44,8 @@ public class ClientUI extends JFrame {
         // Démarrer le rafraîchissement périodique de l'écran
         startScreenRefresh();
 
-        // Démarrer le rafraîchissement périodique de la souris
-        refreshMouse();
+        // Ajouter un écouteur de mouvement de souris à la fenêtre
+        addMouseMotionListener(this);
 
     }
 
@@ -83,25 +85,20 @@ public class ClientUI extends JFrame {
             e.printStackTrace();
         }
     }
-    public void refreshMouse() throws RemoteException {
-        new Thread(() -> {
-            while (true) {
-                try {
-                    // Récupérer les coordonnées de la souris du serveur
-                    int[] mouseCoordinates = server.sendMouseEvent();
-                    // Afficher les coordonnées de la souris dans la console (à des fins de débogage)
-                    System.out.println("Mouse X: " + mouseCoordinates[0] + ", Mouse Y: " + mouseCoordinates[1]);
-                    robot.mouseMove(mouseCoordinates[0],mouseCoordinates[1]);
-                    // Pause pour éviter une surcharge inutile
-                    Thread.sleep(1); // Ajustez selon vos besoins
-                } catch (Exception e) {
-                    System.err.println("Client exception: " + e.toString());
-                    e.printStackTrace();
-                }
-            }
-        }).start();
+
+    @Override
+    public void mouseDragged(MouseEvent e) {
+
     }
 
-
-
+    @Override
+    public void mouseMoved(MouseEvent e) {
+        try {
+            // Récupérer les coordonnées de la souris et les envoyer au serveur
+            double[] mouseCoordinates = {e.getX(), e.getY()};
+            server.receiveMouseEvent(mouseCoordinates);
+        } catch (RemoteException ex) {
+            ex.printStackTrace();
+        }
+    }
 }
