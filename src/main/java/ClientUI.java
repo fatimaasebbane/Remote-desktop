@@ -7,10 +7,9 @@ import java.rmi.registry.Registry;
 
 public class ClientUI extends JFrame implements MouseMotionListener {
     private JLabel screenLabel;
-    private JLabel mousePositionLabel; // Nouvelle étiquette pour afficher la position de la souris
     private Timer timer;
     private RemoteInterface server;
-    private Robot robot;
+
 
     public ClientUI() throws RemoteException {
 
@@ -21,16 +20,12 @@ public class ClientUI extends JFrame implements MouseMotionListener {
         screenLabel = new JLabel();
         add(screenLabel, BorderLayout.CENTER);
 
-        // Ajouter l'étiquette pour afficher les coordonnées de la souris
-        mousePositionLabel = new JLabel();
-        add(mousePositionLabel, BorderLayout.SOUTH);
-
         setSize(800, 600);
         setLocationRelativeTo(null);
 
-        // Connexion au serveur RMI
+        // Connexion au serveur RMI :192.168.137.1
         try {
-            Registry registry = LocateRegistry.getRegistry("192.168.137.1", 1099);
+            Registry registry = LocateRegistry.getRegistry("localhost", 1099);
             server = (RemoteInterface) registry.lookup("remoteDesktopServer");
         } catch (Exception e) {
             System.err.println("Client exception: " + e.toString());
@@ -66,19 +61,21 @@ public class ClientUI extends JFrame implements MouseMotionListener {
         });
     }
 
+
+
     private void startScreenRefresh() {
         ActionListener taskPerformer = new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
                 refreshScreen();
             }
         };
-        timer = new Timer(1, taskPerformer); // Rafraîchir toutes les 1 seconde
+        timer = new Timer(1, taskPerformer); // Rafraîchir toutes les 1 ms
         timer.start();
     }
 
     private void refreshScreen() {
         try {
-            // Récupération de l'écran distant
+           // Récupération de l'écran distant
             byte[] imageData = server.captureScreen();
             if (imageData != null) {
                 // Convertir les données d'image en ImageIcon
@@ -112,13 +109,12 @@ public class ClientUI extends JFrame implements MouseMotionListener {
     public void mouseMoved(MouseEvent e) {
         try {
             // Récupérer les coordonnées de la souris et les envoyer au serveur
-            double[] mouseCoordinates = {e.getX(), e.getY()};
+            double[] mouseCoordinates = {e.getX() / (double) getWidth(), e.getY() / (double) getHeight()};
             server.receiveMouseEvent(mouseCoordinates);
-
-            // Mettre à jour l'affichage de la position de la souris
-            mousePositionLabel.setText("Mouse position: " + e.getX() + ", " + e.getY());
         } catch (RemoteException ex) {
             ex.printStackTrace();
         }
     }
+
+
 }
