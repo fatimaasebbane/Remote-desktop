@@ -23,9 +23,9 @@ public class ClientUI extends JFrame implements MouseMotionListener {
         setSize(800, 600);
         setLocationRelativeTo(null);
 
-        // Connexion au serveur RMI :192.168.137.1
+        // Connexion au serveur RMI
         try {
-            Registry registry = LocateRegistry.getRegistry("localhost", 1099);
+            Registry registry = LocateRegistry.getRegistry("192.168.137.1", 1099);
             server = (RemoteInterface) registry.lookup("remoteDesktopServer");
         } catch (Exception e) {
             System.err.println("Client exception: " + e.toString());
@@ -34,9 +34,8 @@ public class ClientUI extends JFrame implements MouseMotionListener {
         // Démarrer le rafraîchissement périodique de l'écran
         startScreenRefresh();
 
-        // Ajouter un écouteur de mouvement de souris à la fenêtre
-        addMouseMotionListener(this);
-
+        // Ajouter un écouteur de mouvement de souris à l'étiquette screenLabel
+        screenLabel.addMouseMotionListener(this);
         //Envoyer l'action de clic de souris au serveur
         screenLabel.addMouseListener(new MouseAdapter() {
             @Override
