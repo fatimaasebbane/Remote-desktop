@@ -1,3 +1,4 @@
+import java.net.InetAddress;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 
@@ -9,7 +10,9 @@ public class Server {
 
             // Créez une instance de ServerImpl et liez-la au registre RMI
             RemoteInterface server = new ServerImpl();
-            registry.bind("Server", server);
+            //String adress = String.valueOf(InetAddress.getByName("192.168.137.1"));
+
+            registry.bind("remoteDesktopServer", server);
             System.out.println("Server is running...");
         } catch (Exception e) {
             System.err.println("Server exception: " + e.toString());

@@ -35,7 +35,7 @@ public class ClientUI extends JFrame implements MouseMotionListener {
 
         // Connexion au serveur RMI
         try {
-            Registry registry = LocateRegistry.getRegistry("192.167.137.1", 1099);
+            Registry registry = LocateRegistry.getRegistry("192.168.137.1", 1099);
             server = (RemoteInterface) registry.lookup("remoteDesktopServer");
         } catch (Exception e) {
             System.err.println("Client exception: " + e.toString());
