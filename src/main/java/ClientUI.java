@@ -2,8 +2,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 
@@ -11,8 +10,16 @@ public class ClientUI extends JFrame {
     private JLabel screenLabel;
     private Timer timer;
     private RemoteInterface server;
+    private Robot robot;
 
-    public ClientUI() {
+    public ClientUI() throws RemoteException {
+        // Initialisation de la classe Robot pour reproduire les événements de souris
+        try {
+             robot = new Robot();
+        } catch (AWTException e) {
+            System.err.println("Error creating Robot: " + e.getMessage());
+            e.printStackTrace();
+        }
 
         setTitle("Remote Desktop Viewer");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -33,38 +40,11 @@ public class ClientUI extends JFrame {
             e.printStackTrace();
         }
         // Démarrer le rafraîchissement périodique de l'écran
-         startScreenRefresh();
+        startScreenRefresh();
 
-        // Ajouter un écouteur de mouvement de la souris
-        addMouseMotionListener(new MouseAdapter() {
-            @Override
-            public void mouseMoved(MouseEvent e) {
-                try {
-                    server.sendMousePosition(e.getX(), e.getY());
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
-            }
-        });
+        // Démarrer le rafraîchissement périodique de la souris
+        refreshMouse();
 
-        // Ajouter un écouteur pour les clics de souris
-        addMouseListener(new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                try {
-                    int button = e.getButton();
-                    if (button == MouseEvent.BUTTON1) {
-                        server.sendMouseClick(MouseEvent.BUTTON1_DOWN_MASK);
-                    } else if (button == MouseEvent.BUTTON2) {
-                        server.sendMouseClick(MouseEvent.BUTTON2_DOWN_MASK);
-                    } else if (button == MouseEvent.BUTTON3) {
-                        server.sendMouseClick(MouseEvent.BUTTON3_DOWN_MASK);
-                    }
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
-            }
-        });
     }
 
     private void startScreenRefresh() {
@@ -103,6 +83,25 @@ public class ClientUI extends JFrame {
             e.printStackTrace();
         }
     }
+    public void refreshMouse() throws RemoteException {
+        new Thread(() -> {
+            while (true) {
+                try {
+                    // Récupérer les coordonnées de la souris du serveur
+                    int[] mouseCoordinates = server.sendMouseEvent();
+                    // Afficher les coordonnées de la souris dans la console (à des fins de débogage)
+                    System.out.println("Mouse X: " + mouseCoordinates[0] + ", Mouse Y: " + mouseCoordinates[1]);
+                    robot.mouseMove(mouseCoordinates[0],mouseCoordinates[1]);
+                    // Pause pour éviter une surcharge inutile
+                    Thread.sleep(1); // Ajustez selon vos besoins
+                } catch (Exception e) {
+                    System.err.println("Client exception: " + e.toString());
+                    e.printStackTrace();
+                }
+            }
+        }).start();
+    }
+
 
 
 }

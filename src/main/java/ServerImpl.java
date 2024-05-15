@@ -1,21 +1,25 @@
 import javax.imageio.ImageIO;
 import java.awt.*;
-import java.awt.event.InputEvent;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.Timer;
 
 public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
     private Robot robot;
+    private Timer timer;
+    RemoteInterface client;
+
     protected ServerImpl() throws RemoteException {
-        try {
-            robot = new Robot();
-        } catch (Exception e) {
-            throw new RemoteException("Failed to initialize Robot", e);
-        }
+            try {
+                robot = new Robot();
+            } catch (Exception e) {
+                throw new RemoteException("Failed to initialize Robot", e);
+            }
+
     }
 
     @Override
@@ -37,24 +41,16 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
     }
 
     @Override
-    public void sendMousePosition(int x, int y) throws RemoteException {
-        robot.mouseMove(x, y);
-    }
+    public int[] sendMouseEvent() throws RemoteException {
+        // Capturer les positions de la souris
+        Point mousePosition = MouseInfo.getPointerInfo().getLocation();
+        int mouseX = (int) mousePosition.getX();
+        int mouseY = (int) mousePosition.getY();
 
-    @Override
-    public void sendMouseClick(int buttonMask) throws RemoteException {
-        switch (buttonMask) {
-            case MouseEvent.BUTTON1_DOWN_MASK:
-                robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
-                break;
-            case MouseEvent.BUTTON2_DOWN_MASK:
-                robot.mousePress(InputEvent.BUTTON2_DOWN_MASK);
-                break;
-            case MouseEvent.BUTTON3_DOWN_MASK:
-                robot.mousePress(InputEvent.BUTTON3_DOWN_MASK);
-                break;
-            default:
-                break;
-        }
+        // Créer un tableau contenant les coordonnées X et Y de la souris
+        int[] mouseCoordinates = {mouseX, mouseY};
+
+        // Renvoyer les coordonnées de la souris au client
+        return mouseCoordinates;
     }
 }
