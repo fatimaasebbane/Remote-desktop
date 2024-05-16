@@ -5,7 +5,7 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 
-public class ClientUI extends JFrame implements MouseMotionListener {
+public class ClientUI extends JFrame implements KeyListener, MouseListener, MouseMotionListener  {
     private JLabel screenLabel;
     private Timer timer;
     private RemoteInterface server;
@@ -16,12 +16,20 @@ public class ClientUI extends JFrame implements MouseMotionListener {
         setTitle("Remote Desktop Viewer");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
+        // Get the screen size of the client
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 
+        // Set the frame size to 80% of the client's screen size
+        int width = (int) (screenSize.width * 0.8);
+        int height = (int) (screenSize.height * 0.8);
+        setSize(width, height);
+
+        // Center the frame on the screen
+        setLocationRelativeTo(null);
+
+        setLayout(new BorderLayout());
         screenLabel = new JLabel();
         add(screenLabel, BorderLayout.CENTER);
-
-        setSize(800, 600);
-        setLocationRelativeTo(null);
 
         // Demander à l'utilisateur le mot de passe du serveur
         serverPassword = JOptionPane.showInputDialog("Enter the server password:");
@@ -42,33 +50,11 @@ public class ClientUI extends JFrame implements MouseMotionListener {
         }else{
             // Démarrer le rafraîchissement périodique de l'écran
             startScreenRefresh();
-
-            // Ajouter un écouteur de mouvement de souris à l'étiquette screenLabel
-            screenLabel.addMouseMotionListener(this);
-            //Envoyer l'action de clic de souris au serveur
-            screenLabel.addMouseListener(new MouseAdapter() {
-                @Override
-                public void mousePressed(MouseEvent e) {
-                    try {
-                        // Envoyer l'action de clic de souris pressé au serveur
-                        server.mousePressed(e.getX(), e.getY(), e.getButton());
-                    } catch (RemoteException ex) {
-                        ex.printStackTrace();
-                    }
-                }
-
-                @Override
-                public void mouseReleased(MouseEvent e) {
-                    try {
-                        // Envoyer l'action de clic de souris relâché au serveur
-                        server.mouseReleased(e.getX(), e.getY(), e.getButton());
-                    } catch (RemoteException ex) {
-                        ex.printStackTrace();
-                    }
-                }
-            });
+            addKeyListener(this);
+            addMouseListener(this);
+            addMouseMotionListener(this);
         }
-        }
+    }
 
 
 
@@ -112,24 +98,86 @@ public class ClientUI extends JFrame implements MouseMotionListener {
             System.err.println("Client exception: " + e.toString());
             e.printStackTrace();
         }
+
+    }
+    @Override
+    public void mouseMoved(MouseEvent e) {
+        try {
+            int[] tab ={e.getX(), e.getY()};
+            server.receiveMouseEvent(tab);
+        } catch (RemoteException ex) {
+            JOptionPane.showMessageDialog(this, "Error moving cursor on remote screen: " + ex.getMessage(), "Remote Screen Error", JOptionPane.ERROR_MESSAGE);
+            ex.printStackTrace();
+        }
+    }
+
+    @Override
+    public void keyTyped(KeyEvent e) {
+
+    }
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {
+
+    }
+
+    @Override
+    public void mouseClicked(MouseEvent e) {
+        try {
+            Point clickPoint = e.getPoint();
+            int x = clickPoint.x;
+            int y = clickPoint.y;
+
+            int remoteWidth = server.getScreenWidth();
+            int remoteHeight = server.getScreenHeight();
+            int labelWidth = screenLabel.getWidth();
+            int labelHeight = screenLabel.getHeight();
+
+            double scaleX = (double) remoteWidth / labelWidth;
+            double scaleY = (double) remoteHeight / labelHeight;
+
+            int remoteX = (int) (x * scaleX);
+            int remoteY = (int) (y * scaleY);
+
+            remoteX = Math.max(0, Math.min(remoteX, remoteWidth - 1));
+            remoteY = Math.max(0, Math.min(remoteY, remoteHeight - 1));
+
+            server.clickMouse(remoteX, remoteY);
+        } catch (RemoteException ex) {
+            JOptionPane.showMessageDialog(this, "Error sending mouse click to remote screen: " + ex.getMessage(), "Remote Screen Error", JOptionPane.ERROR_MESSAGE);
+            ex.printStackTrace();
+        }
+    }
+
+    @Override
+    public void mousePressed(MouseEvent e) {
+
+    }
+
+    @Override
+    public void mouseReleased(MouseEvent e) {
+
+    }
+
+    @Override
+    public void mouseEntered(MouseEvent e) {
+
+    }
+
+    @Override
+    public void mouseExited(MouseEvent e) {
+
     }
 
     @Override
     public void mouseDragged(MouseEvent e) {
 
     }
-
-    @Override
-    public void mouseMoved(MouseEvent e) {
-        try {
-            // Récupérer les coordonnées de la souris et les envoyer au serveur
-            double[] mouseCoordinates = {e.getX(), e.getY() };
-            server.receiveMouseEvent(mouseCoordinates);
-        } catch (RemoteException ex) {
-            ex.printStackTrace();
-        }
-    }
-
 
 
 }

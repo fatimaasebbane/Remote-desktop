@@ -1,7 +1,6 @@
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.event.InputEvent;
-import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -40,6 +39,16 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
     }
 
     @Override
+    public int getScreenWidth() throws RemoteException {
+        return Toolkit.getDefaultToolkit().getScreenSize().width;
+    }
+
+    @Override
+    public int getScreenHeight() throws RemoteException {
+        return Toolkit.getDefaultToolkit().getScreenSize().height;
+    }
+
+    @Override
     public byte[] captureScreen() throws RemoteException {
         try {
             // Capture de l'écran à l'aide de la classe Robot
@@ -56,93 +65,17 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
             return null;
         }
     }
+
     @Override
-    public void receiveMouseEvent(double[] mouseCoordinates) throws RemoteException {
-        // Obtenir la taille de l'écran du serveur
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        int screenWidth = (int) screenSize.getWidth();
-        int screenHeight = (int) screenSize.getHeight();
-
-        // Obtenir les coordonnées reçues
-        double receivedX = mouseCoordinates[0];
-        double receivedY = mouseCoordinates[1];
-
-        // Convertir les coordonnées reçues en fonction de la taille de l'écran du serveur
-        int x = (int) (receivedX * screenWidth);
-        int y = (int) (receivedY * screenHeight);
-
-        // Déplacer la souris sur le bureau du serveur
-        robot.mouseMove(x, y);
+    public void receiveMouseEvent(int[] mouseCoordinates) throws RemoteException {
+        this.robot.mouseMove( mouseCoordinates[0],  mouseCoordinates[1]);
     }
 
     @Override
-    public void mousePressed(int x, int y, int button) throws RemoteException {
-
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        int screenWidth = (int) screenSize.getWidth();
-        int screenHeight = (int) screenSize.getHeight();
-
-        // Obtenir les coordonnées reçues
-        double receivedX = x;
-        double receivedY = y;
-
-        // Convertir les coordonnées reçues en fonction de la taille de l'écran du serveur
-        int X = (int) (receivedX * screenWidth);
-        int Y = (int) (receivedY * screenHeight);
-
-        // Déplacer la souris sur le bureau du serveur
-        robot.mouseMove(X,Y);
-
-        // Effectuez le clic de souris pressé
-        int inputEvent;
-        switch (button) {
-            case MouseEvent.BUTTON1:
-                inputEvent = InputEvent.BUTTON1_DOWN_MASK;
-                break;
-            case MouseEvent.BUTTON2:
-                inputEvent = InputEvent.BUTTON2_DOWN_MASK;
-                break;
-            case MouseEvent.BUTTON3:
-                inputEvent = InputEvent.BUTTON3_DOWN_MASK;
-                break;
-            default:
-                throw new IllegalArgumentException("Button not recognized: " + button);
-        }
-        robot.mousePress(inputEvent);
+    public void clickMouse(int x, int y) throws RemoteException {
+            robot.mouseMove(x, y);
+            robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
+            robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
     }
 
-    @Override
-    public void mouseReleased(int x, int y, int button) throws RemoteException {
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        int screenWidth = (int) screenSize.getWidth();
-        int screenHeight = (int) screenSize.getHeight();
-
-        // Obtenir les coordonnées reçues
-        double receivedX = x;
-        double receivedY = y;
-
-        // Convertir les coordonnées reçues en fonction de la taille de l'écran du serveur
-        int X = (int) (receivedX * screenWidth);
-        int Y = (int) (receivedY * screenHeight);
-
-        // Déplacer la souris sur le bureau du serveur
-        robot.mouseMove(X,Y);
-
-        // Effectuez le clic de souris relâché
-        int inputEvent;
-        switch (button) {
-            case MouseEvent.BUTTON1:
-                inputEvent = InputEvent.BUTTON1_DOWN_MASK;
-                break;
-            case MouseEvent.BUTTON2:
-                inputEvent = InputEvent.BUTTON2_DOWN_MASK;
-                break;
-            case MouseEvent.BUTTON3:
-                inputEvent = InputEvent.BUTTON3_DOWN_MASK;
-                break;
-            default:
-                throw new IllegalArgumentException("Button not recognized: " + button);
-        }
-        robot.mouseRelease(inputEvent);
-    }
 }
