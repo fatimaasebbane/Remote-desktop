@@ -7,17 +7,35 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.Random;
 
 public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
     private Robot robot;
+    private String password;
 
     protected ServerImpl() throws RemoteException {
             try {
                 robot = new Robot();
+                generatePassword();
             } catch (Exception e) {
                 throw new RemoteException("Failed to initialize Robot", e);
             }
 
+    }
+    // Méthode pour générer un mot de passe aléatoire
+    private void generatePassword() {
+        Random random = new Random();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 6; i++) {
+            sb.append(random.nextInt(10));
+        }
+        password = sb.toString();
+    }
+
+    // Méthode pour vérifier le mot de passe
+    @Override
+    public boolean checkPassword(String inputPassword) {
+        return inputPassword.equals(password);
     }
 
     @Override
