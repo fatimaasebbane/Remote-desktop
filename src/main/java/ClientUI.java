@@ -72,7 +72,7 @@ public class ClientUI extends JFrame implements MouseMotionListener {
 
 
 
-    private boolean checkServerPassword(String password) {
+    private boolean checkServerPassword(String password) throws RemoteException {
         // Vérifier le mot de passe avec le serveur
         return server.checkPassword(password);
     }
