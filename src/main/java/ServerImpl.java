@@ -30,6 +30,7 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
             sb.append(random.nextInt(10));
         }
         password = sb.toString();
+        System.out.printf("password :"+password);
     }
 
     // Méthode pour vérifier le mot de passe
