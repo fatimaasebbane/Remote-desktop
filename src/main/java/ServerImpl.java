@@ -59,8 +59,20 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
     @Override
     public void mousePressed(int x, int y, int button) throws RemoteException {
 
-        // Déplacez la souris à la position spécifiée
-        robot.mouseMove(x, y);
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        int screenWidth = (int) screenSize.getWidth();
+        int screenHeight = (int) screenSize.getHeight();
+
+        // Obtenir les coordonnées reçues
+        double receivedX = x;
+        double receivedY = y;
+
+        // Convertir les coordonnées reçues en fonction de la taille de l'écran du serveur
+        int X = (int) (receivedX * screenWidth);
+        int Y = (int) (receivedY * screenHeight);
+
+        // Déplacer la souris sur le bureau du serveur
+        robot.mouseMove(X,Y);
 
         // Effectuez le clic de souris pressé
         int inputEvent;
@@ -82,8 +94,20 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
 
     @Override
     public void mouseReleased(int x, int y, int button) throws RemoteException {
-     // Déplacez la souris à la position spécifiée
-        robot.mouseMove(x, y);
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        int screenWidth = (int) screenSize.getWidth();
+        int screenHeight = (int) screenSize.getHeight();
+
+        // Obtenir les coordonnées reçues
+        double receivedX = x;
+        double receivedY = y;
+
+        // Convertir les coordonnées reçues en fonction de la taille de l'écran du serveur
+        int X = (int) (receivedX * screenWidth);
+        int Y = (int) (receivedY * screenHeight);
+
+        // Déplacer la souris sur le bureau du serveur
+        robot.mouseMove(X,Y);
 
         // Effectuez le clic de souris relâché
         int inputEvent;
