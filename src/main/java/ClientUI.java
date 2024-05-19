@@ -111,19 +111,11 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
         menuBar.add(fileMenu);
         setJMenuBar(menuBar);
 
-        // Vérifier le mot de passe avec le serveur
-        if (!checkServerPassword(serverPassword)) {
-            JOptionPane.showMessageDialog(this, "Incorrect server password. Exiting...");
-            System.exit(0);
-        } else {
-            // Démarrer le rafraîchissement périodique de l'écran
-            startScreenRefresh();
-            // Gestion des événements de souris et de clavier
 
-            addMouseListener(this);
-            addMouseMotionListener(this);
-            addKeyListener(this);
-        }
+        // Gestion des événements de souris et de clavier
+        addMouseListener(this);
+        addMouseMotionListener(this);
+        addKeyListener(this);
 
         // Dimensions de la fenêtre
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
