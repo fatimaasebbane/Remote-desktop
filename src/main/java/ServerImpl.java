@@ -1,11 +1,18 @@
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.event.InputEvent;
+import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Random;
 
 public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
@@ -23,13 +30,25 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
     }
     // Méthode pour générer un mot de passe aléatoire
     private void generatePassword() {
-        Random random = new Random();
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 6; i++) {
-            sb.append(random.nextInt(10));
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmssSSS");
+        String timestamp = sdf.format(new Date());
+
+        // Ajouter des caractères alphanumérique au mot de passe
+        for (int i = 0; i < timestamp.length(); i++) {
+            char c = timestamp.charAt(i);
+            if (Character.isDigit(c)) {
+                sb.append(c);
+            } else if (Character.isLetter(c)) {
+                sb.append(Character.toUpperCase(c));
+            }
         }
+
+        // Ajouter des caractères spéciaux
+        sb.append("!@#$%");
+
         password = sb.toString();
-        System.out.printf("password :"+password);
+        System.out.printf("Password: %s\n", password);
     }
 
     // Méthode pour vérifier le mot de passe
@@ -68,7 +87,7 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
 
     @Override
     public void receiveMouseEvent(int[] mouseCoordinates) throws RemoteException {
-        this.robot.mouseMove( mouseCoordinates[0],  mouseCoordinates[1]);
+        this.robot.mouseMove(mouseCoordinates[0],mouseCoordinates[1]);
     }
 
     @Override
@@ -77,5 +96,79 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
             robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
             robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
     }
+    @Override
+    public void mousePressed(int x, int y, int button) throws RemoteException {
+        robot.mouseMove(x, y);
+        int inputEvent;
+        switch (button) {
+            case MouseEvent.BUTTON1:
+                inputEvent = InputEvent.BUTTON1_DOWN_MASK;
+                break;
+            case MouseEvent.BUTTON2:
+                inputEvent = InputEvent.BUTTON2_DOWN_MASK;
+                break;
+            case MouseEvent.BUTTON3:
+                inputEvent = InputEvent.BUTTON3_DOWN_MASK;
+                break;
+            default:
+                throw new IllegalArgumentException("Button not recognized: " + button);
+        }
+        robot.mousePress(inputEvent);
+    }
+
+    @Override
+    public void mouseReleased(int x, int y, int button) throws RemoteException {
+        robot.mouseMove(x, y);
+        int inputEvent;
+        switch (button) {
+            case MouseEvent.BUTTON1:
+                inputEvent = InputEvent.BUTTON1_DOWN_MASK;
+                break;
+            case MouseEvent.BUTTON2:
+                inputEvent = InputEvent.BUTTON2_DOWN_MASK;
+                break;
+            case MouseEvent.BUTTON3:
+                inputEvent = InputEvent.BUTTON3_DOWN_MASK;
+                break;
+            default:
+                throw new IllegalArgumentException("Button not recognized: " + button);
+        }
+        robot.mouseRelease(inputEvent);
+    }
+
+    @Override
+    public void keyPressed(int keyCode) throws RemoteException {
+        robot.keyPress(keyCode);
+    }
+
+    @Override
+    public void keyReleased(int keyCode) throws RemoteException {
+        robot.keyRelease(keyCode);
+    }
+
+
+    @Override
+    public void sendFile(byte[] fileData, String fileName) throws RemoteException {
+        try {
+            File file = new File(fileName);
+            FileOutputStream fos = new FileOutputStream(file);
+            fos.write(fileData);
+            fos.close();
+            System.out.println("File received: " + fileName);
+        } catch (IOException e) {
+            throw new RemoteException("Error saving file: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public byte[] receiveFile(String fileName) throws RemoteException {
+        try {
+            File file = new File(fileName);
+            return Files.readAllBytes(Paths.get(file.getAbsolutePath()));
+        } catch (IOException e) {
+            throw new RemoteException("Error reading file: " + e.getMessage());
+        }
+    }
+
 
 }
