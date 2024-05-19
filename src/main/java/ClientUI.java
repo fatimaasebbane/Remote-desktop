@@ -88,7 +88,7 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
 
         // Connexion au serveur RMI
         try {
-            Registry registry = LocateRegistry.getRegistry("localhost", 1099);
+            Registry registry = LocateRegistry.getRegistry("192.168.137.1", 1099);
             server = (RemoteInterface) registry.lookup("remoteDesktopServer");
         } catch (Exception e) {
             System.err.println("Client exception: " + e.toString());
@@ -111,10 +111,19 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
         menuBar.add(fileMenu);
         setJMenuBar(menuBar);
 
-        // Gestion des événements de souris et de clavier
-        addMouseListener(this);
-        addMouseMotionListener(this);
-        addKeyListener(this);
+        // Vérifier le mot de passe avec le serveur
+        if (!checkServerPassword(serverPassword)) {
+            JOptionPane.showMessageDialog(this, "Incorrect server password. Exiting...");
+            System.exit(0);
+        } else {
+            // Démarrer le rafraîchissement périodique de l'écran
+            startScreenRefresh();
+            // Gestion des événements de souris et de clavier
+
+            addMouseListener(this);
+            addMouseMotionListener(this);
+            addKeyListener(this);
+        }
 
         // Dimensions de la fenêtre
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
@@ -122,6 +131,8 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
         int height = (int) (screenSize.height * 0.8);
         setSize(width, height);
         setLocationRelativeTo(null);
+
+
     }
 
     private boolean checkServerPassword(String password) throws RemoteException {
