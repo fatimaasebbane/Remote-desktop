@@ -3,12 +3,7 @@ import java.awt.*;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.*;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.text.SimpleDateFormat;
@@ -115,9 +110,7 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
 
     @Override
     public void clickMouse(int x, int y) throws RemoteException {
-        robot.mouseMove(x, y);
-        robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
-        robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
+        return;
     }
 
     @Override
@@ -140,10 +133,7 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
     }
     @Override
     public void typeKey(char keyChar) throws RemoteException {
-        // Simulate typing by pressing and releasing the corresponding key code
-        int keyCode = KeyEvent.getExtendedKeyCodeForChar(keyChar);
-        keyPressed(keyCode);
-        keyReleased(keyCode);
+       return;
     }
 
 
@@ -164,11 +154,13 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
     public byte[] receiveFile(String fileName) throws RemoteException {
         try {
             File file = new File(fileName);
-            return Files.readAllBytes(Paths.get(file.getAbsolutePath()));
+            byte[] fileData = new byte[(int) file.length()];
+            FileInputStream fis = new FileInputStream(file);
+            fis.read(fileData);
+            fis.close();
+            return fileData;
         } catch (IOException e) {
-            throw new RemoteException("Error reading file: " + e.getMessage());
+            throw new RemoteException("Erreur lors de la lecture du fichier", e);
         }
     }
-
-
 }

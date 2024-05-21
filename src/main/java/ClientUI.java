@@ -4,7 +4,6 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -25,11 +24,16 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
     JPanel sidebarPanel;
     private double scaleX;
     private double scaleY;
-    public ClientUI() throws RemoteException {
 
-        Dimension localScreenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        Dimension remoteScreenSize = null;
-        // Connexion au serveur RMI
+
+    public ClientUI() throws RemoteException {
+        ConnectToserver();
+        initialise();
+    }
+
+
+    public void ConnectToserver(){
+      // Connexion au serveur RMI
         try {
             Registry registry = LocateRegistry.getRegistry("192.168.137.1", 1099);
             server = (RemoteInterface) registry.lookup("remoteDesktopServer");
@@ -37,6 +41,17 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
             System.err.println("Client exception: " + e.toString());
             e.printStackTrace();
         }
+    }
+    public void initialise(){
+
+        Dimension localScreenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        Dimension remoteScreenSize = null;
+
+        // Gestion des événements de souris et de clavier
+        addKeyListener(this);
+        addMouseListener(this);
+        addMouseMotionListener(this);
+
         if (remoteScreenSize != null) {
             double widthScale = localScreenSize.getWidth() / remoteScreenSize.getWidth();
             double heightScale = localScreenSize.getHeight() / remoteScreenSize.getHeight();
@@ -105,7 +120,6 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
         centerPanel.add(connectButton);
         contentPane.add(centerPanel, BorderLayout.WEST);
 
-
         // Création de la barre latérale à droite
         sidebarPanel = new JPanel();
         sidebarPanel.setLayout(new BoxLayout(sidebarPanel, BoxLayout.Y_AXIS));
@@ -137,13 +151,6 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
         fileMenu.add(receiveFileMenuItem);
         menuBar.add(fileMenu);
         setJMenuBar(menuBar);
-
-
-        // Gestion des événements de souris et de clavier
-        addMouseListener(this);
-        addMouseMotionListener(this);
-        addKeyListener(this);
-
     }
 
     private boolean checkServerPassword(String password) throws RemoteException {
@@ -209,12 +216,7 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
 
     @Override
     public void keyTyped(KeyEvent e) {
-        try {
-            server.typeKey(e.getKeyChar());
-        } catch (RemoteException ex) {
-            JOptionPane.showMessageDialog(this, "Error sending key typed to remote screen: " + ex.getMessage(), "Remote Screen Error", JOptionPane.ERROR_MESSAGE);
-            ex.printStackTrace();
-        }
+        return;
     }
 
     @Override
@@ -257,20 +259,7 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
 
     @Override
     public void mouseClicked(MouseEvent e) {
-        try {
-            Point clickPoint = e.getPoint();
-            Insets insets = getInsets();
-            clickPoint.translate(-insets.left, -insets.top - getRootPane().getHeight() + screenLabel.getHeight());
-
-            Dimension localSize = screenLabel.getSize();
-            Dimension remoteSize = server.getScreenSize();
-
-            Point remoteClickPoint = mapLocalToRemoteCursor(clickPoint, localSize, remoteSize);
-            server.clickMouse(remoteClickPoint.x, remoteClickPoint.y);
-        } catch (RemoteException ex) {
-            JOptionPane.showMessageDialog(this, "Error sending mouse click to remote screen: " + ex.getMessage(), "Remote Screen Error", JOptionPane.ERROR_MESSAGE);
-            ex.printStackTrace();
-        }
+        return;
     }
 
     @Override
@@ -315,27 +304,6 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
 
     @Override
     public void mouseExited(MouseEvent e) {
-    }
-
-
-    private void sendFileToServer() {
-        int result = fileChooser.showOpenDialog(this);
-        if (result == JFileChooser.APPROVE_OPTION) {
-            try {
-                String filePath = fileChooser.getSelectedFile().getAbsolutePath();
-                sendFile(filePath);
-                JOptionPane.showMessageDialog(this, "File sent successfully!");
-            } catch (IOException ex) {
-                JOptionPane.showMessageDialog(this, "Error sending file: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-                ex.printStackTrace();
-            }
-        }
-    }
-
-    public void sendFile(String filePath) throws RemoteException, IOException {
-        File file = new File(filePath);
-        byte[] fileData = Files.readAllBytes(Paths.get(file.getAbsolutePath()));
-        server.sendFile(fileData, file.getName());
     }
 
     private class SendFileAction implements ActionListener {
