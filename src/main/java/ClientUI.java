@@ -157,7 +157,7 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
                 refreshScreen();
             }
         };
-        timer = new Timer(1, taskPerformer);
+        timer = new Timer(100, taskPerformer);
         timer.start();
     }
 
@@ -220,15 +220,16 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
     @Override
     public void mousePressed(MouseEvent e) {
         try {
-            Point pressPoint = e.getPoint();
-            Insets insets = getInsets();
-            pressPoint.translate(-insets.left, -insets.top - getRootPane().getHeight() + screenLabel.getHeight());
+            int button = e.getButton();
+            if (button == MouseEvent.BUTTON1) {
+                server.mousePressed(1);
+            } else if (button == MouseEvent.BUTTON2) {
+                server.mousePressed(2);
+            } else if (button == MouseEvent.BUTTON3) {
+                server.mousePressed(3);
+            } else {
 
-            Dimension localSize = screenLabel.getSize();
-            Dimension remoteSize = server.getScreenSize();
-
-            Point remotePressPoint = mapLocalToRemoteCursor(pressPoint, localSize, remoteSize);
-            server.mousePressed(e.getButton());
+            }
         } catch (RemoteException ex) {
             JOptionPane.showMessageDialog(this, "Error sending mouse press to remote screen: " + ex.getMessage(), "Remote Screen Error", JOptionPane.ERROR_MESSAGE);
             ex.printStackTrace();
@@ -238,15 +239,16 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
     @Override
     public void mouseReleased(MouseEvent e) {
         try {
-            Point releasePoint = e.getPoint();
-            Insets insets = getInsets();
-            releasePoint.translate(-insets.left, -insets.top - getRootPane().getHeight() + screenLabel.getHeight());
+            int button = e.getButton();
+            if (button == MouseEvent.BUTTON1) {
+                server.mouseReleased(1);
+            } else if (button == MouseEvent.BUTTON2) {
+                server.mouseReleased(2);
+            } else if (button == MouseEvent.BUTTON3) {
+                server.mouseReleased(3);
+            } else {
 
-            Dimension localSize = screenLabel.getSize();
-            Dimension remoteSize = server.getScreenSize();
-
-            Point remoteReleasePoint = mapLocalToRemoteCursor(releasePoint, localSize, remoteSize);
-            server.mouseReleased(e.getButton());
+            }
         } catch (RemoteException ex) {
             JOptionPane.showMessageDialog(this, "Error sending mouse release to remote screen: " + ex.getMessage(), "Remote Screen Error", JOptionPane.ERROR_MESSAGE);
             ex.printStackTrace();
@@ -282,7 +284,7 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
             Dimension remoteSize = server.getScreenSize();
 
             Point remoteMovePoint = mapLocalToRemoteCursor(movePoint, localSize, remoteSize);
-            server.moveCursor(remoteMovePoint.x, remoteMovePoint.y);
+            server.mouseMoved(remoteMovePoint.x, remoteMovePoint.y);
         } catch (RemoteException ex) {
             JOptionPane.showMessageDialog(this, "Error moving cursor on remote screen: " + ex.getMessage(), "Remote Screen Error", JOptionPane.ERROR_MESSAGE);
             ex.printStackTrace();

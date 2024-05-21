@@ -10,7 +10,7 @@ public interface RemoteInterface extends Remote {
     void mouseReleased(int button) throws RemoteException;
     void keyPressed(int keyCode) throws RemoteException;
     void keyReleased(int keyCode) throws RemoteException;
-    void moveCursor(int x, int y) throws RemoteException;
+    void mouseMoved(int x, int y) throws RemoteException;
     void dragMouse(int x, int y) throws RemoteException;
     void sendFile(byte[] fileData, String fileName) throws RemoteException;
     byte[] receiveFile(String fileName) throws RemoteException;

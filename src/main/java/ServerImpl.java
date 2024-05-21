@@ -76,12 +76,36 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
 
     @Override
     public void mousePressed(int button) throws RemoteException {
-        robot.mousePress(button);
+        int mouseButton = 0;
+        switch (button) {
+            case 1:
+                mouseButton = InputEvent.BUTTON1_DOWN_MASK;
+                break;
+            case 2:
+                mouseButton = InputEvent.BUTTON2_DOWN_MASK;
+                break;
+            case 3:
+                mouseButton = InputEvent.BUTTON3_DOWN_MASK;
+                break;
+        }
+        robot.mousePress(mouseButton);
     }
 
     @Override
     public void mouseReleased(int button) throws RemoteException {
-        robot.mouseRelease(button);
+        int mouseButton = 0;
+        switch (button) {
+            case 1:
+                mouseButton = InputEvent.BUTTON1_DOWN_MASK;
+                break;
+            case 2:
+                mouseButton = InputEvent.BUTTON2_DOWN_MASK;
+                break;
+            case 3:
+                mouseButton = InputEvent.BUTTON3_DOWN_MASK;
+                break;
+        }
+        robot.mouseRelease(mouseButton);
     }
 
     @Override
@@ -106,7 +130,7 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
         robot.keyRelease(keyCode);
     }
     @Override
-    public void moveCursor(int x, int y) throws RemoteException {
+    public void mouseMoved(int x, int y) throws RemoteException {
         robot.mouseMove(x, y);
     }
 
