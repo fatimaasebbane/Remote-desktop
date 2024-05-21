@@ -31,7 +31,7 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
         Dimension remoteScreenSize = null;
         // Connexion au serveur RMI
         try {
-            Registry registry = LocateRegistry.getRegistry("localhost", 1099);
+            Registry registry = LocateRegistry.getRegistry("192.168.137.1", 1099);
             server = (RemoteInterface) registry.lookup("remoteDesktopServer");
         } catch (Exception e) {
             System.err.println("Client exception: " + e.toString());
@@ -191,7 +191,6 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
     public void keyPressed(KeyEvent e) {
         try {
             server.keyPressed(e.getKeyCode());
-            refreshScreen();
         } catch (RemoteException ex) {
             JOptionPane.showMessageDialog(this, "Error sending key press to remote screen: " + ex.getMessage(), "Remote Screen Error", JOptionPane.ERROR_MESSAGE);
             ex.printStackTrace();
@@ -202,7 +201,6 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
     public void keyReleased(KeyEvent e) {
         try {
             server.keyReleased(e.getKeyCode());
-            refreshScreen();
         } catch (RemoteException ex) {
             JOptionPane.showMessageDialog(this, "Error sending key release to remote screen: " + ex.getMessage(), "Remote Screen Error", JOptionPane.ERROR_MESSAGE);
             ex.printStackTrace();
@@ -213,7 +211,6 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
     public void keyTyped(KeyEvent e) {
         try {
             server.typeKey(e.getKeyChar());
-            refreshScreen();
         } catch (RemoteException ex) {
             JOptionPane.showMessageDialog(this, "Error sending key typed to remote screen: " + ex.getMessage(), "Remote Screen Error", JOptionPane.ERROR_MESSAGE);
             ex.printStackTrace();
@@ -232,7 +229,6 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
 
             Point remotePressPoint = mapLocalToRemoteCursor(pressPoint, localSize, remoteSize);
             server.mousePressed(e.getButton());
-            refreshScreen();
         } catch (RemoteException ex) {
             JOptionPane.showMessageDialog(this, "Error sending mouse press to remote screen: " + ex.getMessage(), "Remote Screen Error", JOptionPane.ERROR_MESSAGE);
             ex.printStackTrace();
@@ -251,7 +247,6 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
 
             Point remoteReleasePoint = mapLocalToRemoteCursor(releasePoint, localSize, remoteSize);
             server.mouseReleased(e.getButton());
-            refreshScreen();
         } catch (RemoteException ex) {
             JOptionPane.showMessageDialog(this, "Error sending mouse release to remote screen: " + ex.getMessage(), "Remote Screen Error", JOptionPane.ERROR_MESSAGE);
             ex.printStackTrace();
@@ -270,7 +265,6 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
 
             Point remoteClickPoint = mapLocalToRemoteCursor(clickPoint, localSize, remoteSize);
             server.clickMouse(remoteClickPoint.x, remoteClickPoint.y);
-            refreshScreen();
         } catch (RemoteException ex) {
             JOptionPane.showMessageDialog(this, "Error sending mouse click to remote screen: " + ex.getMessage(), "Remote Screen Error", JOptionPane.ERROR_MESSAGE);
             ex.printStackTrace();
@@ -289,7 +283,6 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
 
             Point remoteMovePoint = mapLocalToRemoteCursor(movePoint, localSize, remoteSize);
             server.moveCursor(remoteMovePoint.x, remoteMovePoint.y);
-            refreshScreen();
         } catch (RemoteException ex) {
             JOptionPane.showMessageDialog(this, "Error moving cursor on remote screen: " + ex.getMessage(), "Remote Screen Error", JOptionPane.ERROR_MESSAGE);
             ex.printStackTrace();
@@ -308,7 +301,6 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
 
             Point remoteDragPoint = mapLocalToRemoteCursor(dragPoint, localSize, remoteSize);
             server.dragMouse(remoteDragPoint.x, remoteDragPoint.y);
-            refreshScreen();
         } catch (RemoteException ex) {
             JOptionPane.showMessageDialog(this, "Error dragging cursor on remote screen: " + ex.getMessage(), "Remote Screen Error", JOptionPane.ERROR_MESSAGE);
             ex.printStackTrace();
