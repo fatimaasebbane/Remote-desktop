@@ -1,7 +1,7 @@
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.event.InputEvent;
-import java.awt.event.MouseEvent;
+import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -13,7 +13,6 @@ import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Random;
 
 public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
     private Robot robot;
@@ -58,16 +57,6 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
     }
 
     @Override
-    public int getScreenWidth() throws RemoteException {
-        return Toolkit.getDefaultToolkit().getScreenSize().width;
-    }
-
-    @Override
-    public int getScreenHeight() throws RemoteException {
-        return Toolkit.getDefaultToolkit().getScreenSize().height;
-    }
-
-    @Override
     public byte[] captureScreen() throws RemoteException {
         try {
             // Capture de l'écran à l'aide de la classe Robot
@@ -86,54 +75,25 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
     }
 
     @Override
-    public void receiveMouseEvent(int[] mouseCoordinates) throws RemoteException {
-        this.robot.mouseMove(mouseCoordinates[0],mouseCoordinates[1]);
+    public void mousePressed(int button) throws RemoteException {
+        robot.mousePress(button);
+    }
+
+    @Override
+    public void mouseReleased(int button) throws RemoteException {
+        robot.mouseRelease(button);
+    }
+
+    @Override
+    public Dimension getScreenSize() throws RemoteException {
+        return Toolkit.getDefaultToolkit().getScreenSize();
     }
 
     @Override
     public void clickMouse(int x, int y) throws RemoteException {
-            robot.mouseMove(x, y);
-            robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
-            robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
-    }
-    @Override
-    public void mousePressed(int x, int y, int button) throws RemoteException {
         robot.mouseMove(x, y);
-        int inputEvent;
-        switch (button) {
-            case MouseEvent.BUTTON1:
-                inputEvent = InputEvent.BUTTON1_DOWN_MASK;
-                break;
-            case MouseEvent.BUTTON2:
-                inputEvent = InputEvent.BUTTON2_DOWN_MASK;
-                break;
-            case MouseEvent.BUTTON3:
-                inputEvent = InputEvent.BUTTON3_DOWN_MASK;
-                break;
-            default:
-                throw new IllegalArgumentException("Button not recognized: " + button);
-        }
-        robot.mousePress(inputEvent);
-    }
-
-    @Override
-    public void mouseReleased(int x, int y, int button) throws RemoteException {
-        robot.mouseMove(x, y);
-        int inputEvent;
-        switch (button) {
-            case MouseEvent.BUTTON1:
-                inputEvent = InputEvent.BUTTON1_DOWN_MASK;
-                break;
-            case MouseEvent.BUTTON2:
-                inputEvent = InputEvent.BUTTON2_DOWN_MASK;
-                break;
-            case MouseEvent.BUTTON3:
-                inputEvent = InputEvent.BUTTON3_DOWN_MASK;
-                break;
-            default:
-                throw new IllegalArgumentException("Button not recognized: " + button);
-        }
-        robot.mouseRelease(inputEvent);
+        robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
+        robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
     }
 
     @Override
@@ -144,6 +104,22 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
     @Override
     public void keyReleased(int keyCode) throws RemoteException {
         robot.keyRelease(keyCode);
+    }
+    @Override
+    public void moveCursor(int x, int y) throws RemoteException {
+        robot.mouseMove(x, y);
+    }
+
+    @Override
+    public void dragMouse(int x, int y) throws RemoteException {
+        robot.mouseMove(x, y);
+    }
+    @Override
+    public void typeKey(char keyChar) throws RemoteException {
+        // Simulate typing by pressing and releasing the corresponding key code
+        int keyCode = KeyEvent.getExtendedKeyCodeForChar(keyChar);
+        keyPressed(keyCode);
+        keyReleased(keyCode);
     }
 
 

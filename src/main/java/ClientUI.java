@@ -1,6 +1,9 @@
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -20,10 +23,41 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
     private JTextField passwordField;
     JPanel centerPanel;
     JPanel sidebarPanel;
+    private double scaleX;
+    private double scaleY;
     public ClientUI() throws RemoteException {
+
+        Dimension localScreenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        Dimension remoteScreenSize = null;
+        // Connexion au serveur RMI
+        try {
+            Registry registry = LocateRegistry.getRegistry("localhost", 1099);
+            server = (RemoteInterface) registry.lookup("remoteDesktopServer");
+        } catch (Exception e) {
+            System.err.println("Client exception: " + e.toString());
+            e.printStackTrace();
+        }
+        if (remoteScreenSize != null) {
+            double widthScale = localScreenSize.getWidth() / remoteScreenSize.getWidth();
+            double heightScale = localScreenSize.getHeight() / remoteScreenSize.getHeight();
+            double scale = Math.min(widthScale, heightScale);
+
+            int width = (int) (remoteScreenSize.getWidth() * scale);
+            int height = (int) (remoteScreenSize.getHeight() * scale);
+
+            scaleX = scale;
+            scaleY = scale;
+
+            setSize(width, height);
+        } else {
+            setSize((int) (localScreenSize.getWidth() * 0.8), (int) (localScreenSize.getHeight() * 0.8));
+        }
+
         setTitle("AnyDesk");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLocationRelativeTo(null);
         setLayout(new BorderLayout());
+
 
         // Création du panneau de contenu
         contentPane = new JPanel(new BorderLayout());
@@ -61,6 +95,7 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
                         startScreenRefresh();
                         centerPanel.setVisible(false);
                         sidebarPanel.setVisible(false);
+                        topPanel.setVisible(false);
                     }
                 } catch (RemoteException ex) {
                     ex.printStackTrace();
@@ -86,14 +121,6 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
         // Initialisation du sélecteur de fichiers
         fileChooser = new JFileChooser();
 
-        // Connexion au serveur RMI
-        try {
-            Registry registry = LocateRegistry.getRegistry("192.168.137.1", 1099);
-            server = (RemoteInterface) registry.lookup("remoteDesktopServer");
-        } catch (Exception e) {
-            System.err.println("Client exception: " + e.toString());
-            e.printStackTrace();
-        }
 
         // Ajout des autres composants et fonctionnalités (rafraîchissement d'écran, gestion des événements, etc.)
         screenLabel = new JLabel();
@@ -117,14 +144,6 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
         addMouseMotionListener(this);
         addKeyListener(this);
 
-        // Dimensions de la fenêtre
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        int width = (int) (screenSize.width * 0.8);
-        int height = (int) (screenSize.height * 0.8);
-        setSize(width, height);
-        setLocationRelativeTo(null);
-
-
     }
 
     private boolean checkServerPassword(String password) throws RemoteException {
@@ -138,152 +157,41 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
                 refreshScreen();
             }
         };
-        timer = new Timer(1, taskPerformer); // Rafraîchir toutes les 1 ms
+        timer = new Timer(1, taskPerformer);
         timer.start();
     }
 
     private void refreshScreen() {
         try {
-            // Récupération de l'écran distant
-            byte[] imageData = server.captureScreen();
-            if (imageData != null) {
-                // Convertir les données d'image en ImageIcon
-                ImageIcon imageIcon = new ImageIcon(imageData);
+            byte[] screenData = server.captureScreen();
+            ByteArrayInputStream bais = new ByteArrayInputStream(screenData);
+            BufferedImage image = ImageIO.read(bais);
 
-                // Redimensionner l'image capturée en fonction de la taille de l'écran du client
-                int screenWidth = Toolkit.getDefaultToolkit().getScreenSize().width;
-                int screenHeight = Toolkit.getDefaultToolkit().getScreenSize().height;
-                Image scaledImage = imageIcon.getImage().getScaledInstance(screenWidth, screenHeight, Image.SCALE_SMOOTH);
-                ImageIcon scaledImageIcon = new ImageIcon(scaledImage);
-
-                // Afficher l'image redimensionnée dans JLabel
-                screenLabel.setIcon(scaledImageIcon);
-            }
+                if (screenLabel.getWidth() > 0 && screenLabel.getHeight() > 0) {
+                    Image scaledImage = image.getScaledInstance(screenLabel.getWidth(), screenLabel.getHeight(), Image.SCALE_SMOOTH);
+                    ImageIcon icon = new ImageIcon(scaledImage);
+                    screenLabel.setIcon(icon);
+                }
+                repaint();
         } catch (Exception e) {
-            System.err.println("Client exception: " + e.toString());
+            JOptionPane.showMessageDialog(this, "Error capturing remote screen: " + e.getMessage(), "Remote Screen Error", JOptionPane.ERROR_MESSAGE);
             e.printStackTrace();
         }
     }
+    private Point mapLocalToRemoteCursor(Point localCursor, Dimension localScreen, Dimension remoteScreen) {
+        double relativeX = (double) localCursor.x / localScreen.width;
+        double relativeY = (double) localCursor.y / localScreen.height;
 
+        int remoteX = (int) (relativeX * remoteScreen.width);
+        int remoteY = (int) (relativeY * remoteScreen.height);
 
-    @Override
-    public void mouseMoved(MouseEvent e) {
-        try {
-            int x = e.getX();
-            int y = e.getY();
-            Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-            int screenWidth = screenSize.width;
-            int screenHeight = screenSize.height;
-            int labelWidth = screenLabel.getWidth();
-            int labelHeight = screenLabel.getHeight();
-
-            int remoteX = (int) ((double) x / labelWidth * screenWidth);
-            int remoteY = (int) ((double) y / labelHeight * screenHeight);
-
-            int[] tab = {remoteX, remoteY};
-            server.receiveMouseEvent(tab);
-        } catch (RemoteException ex) {
-            JOptionPane.showMessageDialog(this, "Error moving cursor on remote screen: " + ex.getMessage(), "Remote Screen Error", JOptionPane.ERROR_MESSAGE);
-            ex.printStackTrace();
-        }
+        return new Point(remoteX, remoteY);
     }
-
-    @Override
-    public void mouseClicked(MouseEvent e) {
-        try {
-            Point clickPoint = e.getPoint();
-            int x = clickPoint.x;
-            int y = clickPoint.y;
-
-            int remoteWidth = server.getScreenWidth();
-            int remoteHeight = server.getScreenHeight();
-            int labelWidth = screenLabel.getWidth();
-            int labelHeight = screenLabel.getHeight();
-
-            double scaleX = (double) remoteWidth / labelWidth;
-            double scaleY = (double) remoteHeight / labelHeight;
-
-            int remoteX = (int) (x * scaleX);
-            int remoteY = (int) (y * scaleY);
-
-            remoteX = Math.max(0, Math.min(remoteX, remoteWidth - 1));
-            remoteY = Math.max(0, Math.min(remoteY, remoteHeight - 1));
-
-            server.clickMouse(remoteX, remoteY);
-        } catch (RemoteException ex) {
-            JOptionPane.showMessageDialog(this, "Error sending mouse click to remote screen: " + ex.getMessage(), "Remote Screen Error", JOptionPane.ERROR_MESSAGE);
-            ex.printStackTrace();
-        }
-    }
-
-    @Override
-    public void mousePressed(MouseEvent e) {
-
-        try {
-            int x = e.getX();
-            int y = e.getY();
-            Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-            int screenWidth = screenSize.width;
-            int screenHeight = screenSize.height;
-            int labelWidth = screenLabel.getWidth();
-            int labelHeight = screenLabel.getHeight();
-
-            int remoteX = (int) ((double) x / labelWidth * screenWidth);
-            int remoteY = (int) ((double) y / labelHeight * screenHeight);
-
-            server.mousePressed(remoteX, remoteY, e.getButton());
-        } catch (RemoteException ex) {
-            JOptionPane.showMessageDialog(this, "Error sending mouse press to remote screen: " + ex.getMessage(), "Remote Screen Error", JOptionPane.ERROR_MESSAGE);
-            ex.printStackTrace();
-        }
-    }
-
-    @Override
-    public void mouseReleased(MouseEvent e) {
-        try {
-            int x = e.getX();
-            int y = e.getY();
-            Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-            int screenWidth = screenSize.width;
-            int screenHeight = screenSize.height;
-            int labelWidth = screenLabel.getWidth();
-            int labelHeight = screenLabel.getHeight();
-
-            int remoteX = (int) ((double) x / labelWidth * screenWidth);
-            int remoteY = (int) ((double) y / labelHeight * screenHeight);
-
-            server.mouseReleased(remoteX, remoteY, e.getButton());
-        } catch (RemoteException ex) {
-            JOptionPane.showMessageDialog(this, "Error sending mouse release to remote screen: " + ex.getMessage(), "Remote Screen Error", JOptionPane.ERROR_MESSAGE);
-            ex.printStackTrace();
-        }
-    }
-
-    @Override
-    public void mouseDragged(MouseEvent e) {
-        try {
-            int x = e.getX();
-            int y = e.getY();
-            Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-            int screenWidth = screenSize.width;
-            int screenHeight = screenSize.height;
-            int labelWidth = screenLabel.getWidth();
-            int labelHeight = screenLabel.getHeight();
-
-            int remoteX = (int) ((double) x / labelWidth * screenWidth);
-            int remoteY = (int) ((double) y / labelHeight * screenHeight);
-
-            server.receiveMouseEvent(new int[]{remoteX, remoteY});
-        } catch (RemoteException ex) {
-            JOptionPane.showMessageDialog(this, "Error dragging mouse on remote screen: " + ex.getMessage(), "Remote Screen Error", JOptionPane.ERROR_MESSAGE);
-            ex.printStackTrace();
-        }
-    }
-
     @Override
     public void keyPressed(KeyEvent e) {
         try {
             server.keyPressed(e.getKeyCode());
+            refreshScreen();
         } catch (RemoteException ex) {
             JOptionPane.showMessageDialog(this, "Error sending key press to remote screen: " + ex.getMessage(), "Remote Screen Error", JOptionPane.ERROR_MESSAGE);
             ex.printStackTrace();
@@ -294,24 +202,125 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
     public void keyReleased(KeyEvent e) {
         try {
             server.keyReleased(e.getKeyCode());
+            refreshScreen();
         } catch (RemoteException ex) {
             JOptionPane.showMessageDialog(this, "Error sending key release to remote screen: " + ex.getMessage(), "Remote Screen Error", JOptionPane.ERROR_MESSAGE);
             ex.printStackTrace();
         }
     }
+
+    @Override
+    public void keyTyped(KeyEvent e) {
+        try {
+            server.typeKey(e.getKeyChar());
+            refreshScreen();
+        } catch (RemoteException ex) {
+            JOptionPane.showMessageDialog(this, "Error sending key typed to remote screen: " + ex.getMessage(), "Remote Screen Error", JOptionPane.ERROR_MESSAGE);
+            ex.printStackTrace();
+        }
+    }
+
+    @Override
+    public void mousePressed(MouseEvent e) {
+        try {
+            Point pressPoint = e.getPoint();
+            Insets insets = getInsets();
+            pressPoint.translate(-insets.left, -insets.top - getRootPane().getHeight() + screenLabel.getHeight());
+
+            Dimension localSize = screenLabel.getSize();
+            Dimension remoteSize = server.getScreenSize();
+
+            Point remotePressPoint = mapLocalToRemoteCursor(pressPoint, localSize, remoteSize);
+            server.mousePressed(e.getButton());
+            refreshScreen();
+        } catch (RemoteException ex) {
+            JOptionPane.showMessageDialog(this, "Error sending mouse press to remote screen: " + ex.getMessage(), "Remote Screen Error", JOptionPane.ERROR_MESSAGE);
+            ex.printStackTrace();
+        }
+    }
+
+    @Override
+    public void mouseReleased(MouseEvent e) {
+        try {
+            Point releasePoint = e.getPoint();
+            Insets insets = getInsets();
+            releasePoint.translate(-insets.left, -insets.top - getRootPane().getHeight() + screenLabel.getHeight());
+
+            Dimension localSize = screenLabel.getSize();
+            Dimension remoteSize = server.getScreenSize();
+
+            Point remoteReleasePoint = mapLocalToRemoteCursor(releasePoint, localSize, remoteSize);
+            server.mouseReleased(e.getButton());
+            refreshScreen();
+        } catch (RemoteException ex) {
+            JOptionPane.showMessageDialog(this, "Error sending mouse release to remote screen: " + ex.getMessage(), "Remote Screen Error", JOptionPane.ERROR_MESSAGE);
+            ex.printStackTrace();
+        }
+    }
+
+    @Override
+    public void mouseClicked(MouseEvent e) {
+        try {
+            Point clickPoint = e.getPoint();
+            Insets insets = getInsets();
+            clickPoint.translate(-insets.left, -insets.top - getRootPane().getHeight() + screenLabel.getHeight());
+
+            Dimension localSize = screenLabel.getSize();
+            Dimension remoteSize = server.getScreenSize();
+
+            Point remoteClickPoint = mapLocalToRemoteCursor(clickPoint, localSize, remoteSize);
+            server.clickMouse(remoteClickPoint.x, remoteClickPoint.y);
+            refreshScreen();
+        } catch (RemoteException ex) {
+            JOptionPane.showMessageDialog(this, "Error sending mouse click to remote screen: " + ex.getMessage(), "Remote Screen Error", JOptionPane.ERROR_MESSAGE);
+            ex.printStackTrace();
+        }
+    }
+
+    @Override
+    public void mouseMoved(MouseEvent e) {
+        try {
+            Point movePoint = e.getPoint();
+            Insets insets = getInsets();
+            movePoint.translate(-insets.left, -insets.top - getRootPane().getHeight() + screenLabel.getHeight());
+
+            Dimension localSize = screenLabel.getSize();
+            Dimension remoteSize = server.getScreenSize();
+
+            Point remoteMovePoint = mapLocalToRemoteCursor(movePoint, localSize, remoteSize);
+            server.moveCursor(remoteMovePoint.x, remoteMovePoint.y);
+            refreshScreen();
+        } catch (RemoteException ex) {
+            JOptionPane.showMessageDialog(this, "Error moving cursor on remote screen: " + ex.getMessage(), "Remote Screen Error", JOptionPane.ERROR_MESSAGE);
+            ex.printStackTrace();
+        }
+    }
+
+    @Override
+    public void mouseDragged(MouseEvent e) {
+        try {
+            Point dragPoint = e.getPoint();
+            Insets insets = getInsets();
+            dragPoint.translate(-insets.left, -insets.top - getRootPane().getHeight() + screenLabel.getHeight());
+
+            Dimension localSize = screenLabel.getSize();
+            Dimension remoteSize = server.getScreenSize();
+
+            Point remoteDragPoint = mapLocalToRemoteCursor(dragPoint, localSize, remoteSize);
+            server.dragMouse(remoteDragPoint.x, remoteDragPoint.y);
+            refreshScreen();
+        } catch (RemoteException ex) {
+            JOptionPane.showMessageDialog(this, "Error dragging cursor on remote screen: " + ex.getMessage(), "Remote Screen Error", JOptionPane.ERROR_MESSAGE);
+            ex.printStackTrace();
+        }
+    }
+
     @Override
     public void mouseEntered(MouseEvent e) {
-
     }
 
     @Override
     public void mouseExited(MouseEvent e) {
-
-    }
-
-
-    @Override
-    public void keyTyped(KeyEvent e) {
     }
 
 
