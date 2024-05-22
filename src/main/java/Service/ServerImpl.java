@@ -1,8 +1,11 @@
+package Service;
+
+import Service.RemoteInterface;
+
 import javax.imageio.ImageIO;
 import javax.sound.sampled.*;
 import java.awt.*;
 import java.awt.event.InputEvent;
-import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -15,10 +18,13 @@ import java.rmi.server.UnicastRemoteObject;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
+
 public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
     private Robot robot;
     private String password;
     private TargetDataLine microphone;
+
+
     protected ServerImpl() throws RemoteException {
             try {
                 robot = new Robot();
@@ -27,7 +33,6 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
             } catch (Exception e) {
                 throw new RemoteException("Failed to initialize Robot", e);
             }
-
     }
 
     // Méthode pour générer un mot de passe aléatoire
@@ -132,7 +137,15 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
 
     @Override
     public void keyPressed(int keyCode) throws RemoteException {
-        robot.keyPress(keyCode);
+        System.out.println("Key pressed: " + keyCode);
+        try {
+            Robot robot = new Robot();
+            robot.keyPress(keyCode);
+        } catch (IllegalArgumentException e) {
+            System.out.println("Invalid key code: " + keyCode);
+        } catch (Exception e) {
+            System.out.println("Exception: " + e.getMessage());
+        }
     }
 
     @Override

@@ -1,4 +1,7 @@
-import java.net.InetAddress;
+package Service;
+
+import Service.RemoteInterface;
+
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 
@@ -8,13 +11,13 @@ public class Server {
             // Créez un registre RMI sur le port 1099
             Registry registry = LocateRegistry.createRegistry(1099);
 
-            // Créez une instance de ServerImpl et liez-la au registre RMI
+            // Créez une instance de Service.ServerImpl et liez-la au registre RMI
             RemoteInterface server = new ServerImpl();
 
             registry.bind("remoteDesktopServer", server);
-            System.out.println("Server is running...");
+            System.out.println("Service.Server is running...");
         } catch (Exception e) {
-            System.err.println("Server exception: " + e.toString());
+            System.err.println("Service.Server exception: " + e.toString());
             e.printStackTrace();
         }
     }

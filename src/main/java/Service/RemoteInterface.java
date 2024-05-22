@@ -1,3 +1,5 @@
+package Service;
+
 import java.awt.*;
 import java.rmi.Remote;
 import java.rmi.RemoteException;
