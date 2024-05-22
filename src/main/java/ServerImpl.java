@@ -109,11 +109,6 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
     }
 
     @Override
-    public void clickMouse(int x, int y) throws RemoteException {
-        return;
-    }
-
-    @Override
     public void keyPressed(int keyCode) throws RemoteException {
         robot.keyPress(keyCode);
     }
@@ -131,10 +126,7 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
     public void dragMouse(int x, int y) throws RemoteException {
         robot.mouseMove(x, y);
     }
-    @Override
-    public void typeKey(char keyChar) throws RemoteException {
-       return;
-    }
+
 
 
     @Override

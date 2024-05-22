@@ -13,15 +13,15 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 
 public class ClientUI extends JFrame implements KeyListener, MouseListener, MouseMotionListener {
-    private JLabel screenLabel;
     private Timer timer;
     private RemoteInterface server;
     private String serverPassword;
     private JFileChooser fileChooser;
-    private JPanel contentPane;
     private JTextField passwordField;
-    JPanel centerPanel;
-    JPanel sidebarPanel;
+    private JLabel screenLabel;
+    private JPanel contentPanel;
+    private JPanel centerPanel;
+    private JPanel sidebarPanel;
     private double scaleX;
     private double scaleY;
 
@@ -75,8 +75,8 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
 
 
         // Création du panneau de contenu
-        contentPane = new JPanel(new BorderLayout());
-        setContentPane(contentPane);
+        contentPanel = new JPanel(new BorderLayout());
+        setContentPane(contentPanel);
 
         // Création du panneau supérieur pour le logo et le nom de l'application
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -85,7 +85,7 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
         appNameLabel.setFont(new Font("Arial", Font.BOLD, 24));
         topPanel.add(logoLabel);
         topPanel.add(appNameLabel);
-        contentPane.add(topPanel, BorderLayout.NORTH);
+        contentPanel.add(topPanel, BorderLayout.NORTH);
 
         // Création du panneau central pour le champ de saisie du mot de passe
         centerPanel = new JPanel();
@@ -118,7 +118,7 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
             }
         });
         centerPanel.add(connectButton);
-        contentPane.add(centerPanel, BorderLayout.WEST);
+        contentPanel.add(centerPanel, BorderLayout.WEST);
 
         // Création de la barre latérale à droite
         sidebarPanel = new JPanel();
@@ -130,15 +130,13 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
         instructionsArea.setLineWrap(true);
         instructionsArea.setWrapStyleWord(true);
         sidebarPanel.add(new JScrollPane(instructionsArea));
-        contentPane.add(sidebarPanel, BorderLayout.EAST);
+        contentPanel.add(sidebarPanel, BorderLayout.EAST);
 
         // Initialisation du sélecteur de fichiers
         fileChooser = new JFileChooser();
 
-
-        // Ajout des autres composants et fonctionnalités (rafraîchissement d'écran, gestion des événements, etc.)
         screenLabel = new JLabel();
-        contentPane.add(screenLabel, BorderLayout.CENTER);
+        screenLabel.add(contentPanel, BorderLayout.CENTER);
 
         // Menu pour le transfert de fichiers
         JMenuBar menuBar = new JMenuBar();
