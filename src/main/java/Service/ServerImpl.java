@@ -1,7 +1,5 @@
 package Service;
 
-import Service.RemoteInterface;
-
 import javax.imageio.ImageIO;
 import javax.sound.sampled.*;
 import java.awt.*;
@@ -23,6 +21,8 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
     private Robot robot;
     private String password;
     private TargetDataLine microphone;
+    private boolean isPlayingMedia = false;
+
 
 
     protected ServerImpl() throws RemoteException {
@@ -30,6 +30,7 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
                 robot = new Robot();
                 generatePassword();
                 initMicrophone();
+                startMediaDetection();
             } catch (Exception e) {
                 throw new RemoteException("Failed to initialize Robot", e);
             }
@@ -87,6 +88,23 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
         microphone = (TargetDataLine) AudioSystem.getLine(info);
         microphone.open(format);
         microphone.start();
+    }
+    private void startMediaDetection() {
+        new Thread(() -> {
+            byte[] buffer = new byte[4096];
+            while (true) {
+                int bytesRead = microphone.read(buffer, 0, buffer.length);
+                if (bytesRead > 0) {
+                    // Analyse the buffer to detect if media is playing
+                    boolean mediaPlaying = isMediaPlaying(buffer, bytesRead);
+                    try {
+                        setPlayingMedia(mediaPlaying);
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }).start();
     }
 
     @Override
@@ -190,6 +208,28 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
         }
     }
     @Override
+    public boolean isMediaPlaying(byte[] buffer, int bytesRead) {
+        // Simple heuristic: if the average volume level is above a threshold, assume media is playing
+        long sum = 0;
+        for (int i = 0; i < bytesRead; i += 2) {
+            int sample = (buffer[i + 1] << 8) | (buffer[i] & 0xFF);
+            sum += Math.abs(sample);
+        }
+        double average = sum / (bytesRead / 2.0);
+        return average > 1000;
+    }
+
+    @Override
+    public boolean isPlayingMedia() throws RemoteException {
+        return isPlayingMedia;
+    }
+
+    @Override
+    public void setPlayingMedia(boolean playing) throws RemoteException {
+        this.isPlayingMedia = playing;
+    }
+
+    @Override
     public byte[] captureAudioChunk() throws RemoteException {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         byte[] buffer = new byte[4096];
@@ -199,6 +239,5 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
         }
         return out.toByteArray();
     }
-
 
 }

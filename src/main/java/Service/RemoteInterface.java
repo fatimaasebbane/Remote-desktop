@@ -18,6 +18,9 @@ public interface RemoteInterface extends Remote {
     byte[] receiveFile(String fileName) throws RemoteException;
     Dimension getScreenSize() throws RemoteException;
     void typeKey(char keyChar) throws RemoteException;
-    // New methods for audio streaming
     byte[] captureAudioChunk() throws RemoteException;
+    boolean isPlayingMedia() throws RemoteException; // Nouvelle méthode
+    void setPlayingMedia(boolean playing) throws RemoteException;
+    boolean isMediaPlaying(byte[] buffer, int bytesRead);
+
 }

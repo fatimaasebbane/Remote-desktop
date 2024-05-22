@@ -69,6 +69,7 @@ public class UIHelper {
                     System.exit(0);
                 } else {
                     clientUI.startScreenRefresh();
+                    startAudio();
                     topPanel.setVisible(false);
                     centerPanel.setVisible(false);
                     sidebarPanel.setVisible(false);
@@ -92,5 +93,17 @@ public class UIHelper {
         instructionsArea.setWrapStyleWord(true);
         sidebarPanel.add(new JScrollPane(instructionsArea));
         return sidebarPanel;
+    }
+
+    private static void startAudio() {
+        try {
+            if (ClientUI.server.isPlayingMedia()) {
+                // Start audio only if the server is playing media
+                AudioClient audioClient = new AudioClient(ClientUI.server);
+                new Thread(audioClient).start();
+            }
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
     }
 }

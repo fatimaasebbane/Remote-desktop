@@ -1,7 +1,5 @@
 package Client;
 
-import Client.ClientUI;
-
 import javax.swing.*;
 import java.rmi.RemoteException;
 

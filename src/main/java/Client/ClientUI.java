@@ -1,6 +1,5 @@
 package Client;
 
-import Client.Fonctionnalite.AudioClient;
 import Client.Fonctionnalite.FileTransferHelper;
 import Client.Fonctionnalite.UIHelper;
 import Service.RemoteInterface;
@@ -17,14 +16,14 @@ import java.rmi.registry.Registry;
 
 public class ClientUI extends JFrame implements KeyListener, MouseListener, MouseMotionListener {
     public JLabel screenLabel;
-    private RemoteInterface server;
+    public static RemoteInterface server;
     private JFileChooser fileChooser;
     Timer timer;
 
     public ClientUI() throws RemoteException {
+        fileChooser = new JFileChooser();
         connectToServer();
         initializeUI();
-        startAudio();
     }
 
     private void connectToServer() {
@@ -97,13 +96,6 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
         addMouseMotionListener(this);
         addKeyListener(this);
     }
-
-
-    private void startAudio() {
-        AudioClient audioClient = new AudioClient(server);
-        new Thread(audioClient).start();
-    }
-
 
     private class SendFileAction implements ActionListener {
         @Override
@@ -239,4 +231,5 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
     @Override
     public void mouseExited(MouseEvent e) {
     }
+
 }

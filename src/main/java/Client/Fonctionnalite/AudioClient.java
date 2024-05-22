@@ -28,17 +28,28 @@ public class AudioClient implements Runnable {
             speakers.open(format);
             speakers.start();
 
+            int bufferSize = 4096;
+            byte[] buffer = new byte[bufferSize];
+            int bytesRead;
+
             while (true) {
                 byte[] audioChunk = server.captureAudioChunk();
                 ByteArrayInputStream bais = new ByteArrayInputStream(audioChunk);
-                int bytesRead;
-                byte[] buffer = new byte[4096];
-                while ((bytesRead = bais.read(buffer)) != -1) {
-                    speakers.write(buffer, 0, bytesRead);
+
+                // Fill the buffer with data from the audio chunk
+                while ((bytesRead = bais.read(buffer, 0, bufferSize)) != -1) {
+                    // Write to the buffer of the SourceDataLine
+                    int bytesWritten = speakers.write(buffer, 0, bytesRead);
+
+                    // Ensure that all bytes are written before proceeding
+                    while (bytesWritten != bytesRead) {
+                        bytesWritten += speakers.write(buffer, bytesWritten, bytesRead - bytesWritten);
+                    }
                 }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
 }
