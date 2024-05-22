@@ -1,9 +1,14 @@
 import javax.imageio.ImageIO;
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.DataLine;
+import javax.sound.sampled.SourceDataLine;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -13,27 +18,22 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 
 public class ClientUI extends JFrame implements KeyListener, MouseListener, MouseMotionListener {
+    private JLabel screenLabel;
     private Timer timer;
     private RemoteInterface server;
     private String serverPassword;
     private JFileChooser fileChooser;
+    private JPanel contentPane;
     private JTextField passwordField;
-    private JLabel screenLabel;
-    private JPanel contentPanel;
-    private JPanel centerPanel;
-    private JPanel sidebarPanel;
+    JPanel centerPanel;
+    JPanel sidebarPanel;
     private double scaleX;
     private double scaleY;
-
-
     public ClientUI() throws RemoteException {
-        ConnectToserver();
-        initialise();
-    }
 
-
-    public void ConnectToserver(){
-      // Connexion au serveur RMI
+        Dimension localScreenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        Dimension remoteScreenSize = null;
+        // Connexion au serveur RMI
         try {
             Registry registry = LocateRegistry.getRegistry("192.168.137.1", 1099);
             server = (RemoteInterface) registry.lookup("remoteDesktopServer");
@@ -41,17 +41,6 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
             System.err.println("Client exception: " + e.toString());
             e.printStackTrace();
         }
-    }
-    public void initialise(){
-
-        Dimension localScreenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        Dimension remoteScreenSize = null;
-
-        // Gestion des événements de souris et de clavier
-        addKeyListener(this);
-        addMouseListener(this);
-        addMouseMotionListener(this);
-
         if (remoteScreenSize != null) {
             double widthScale = localScreenSize.getWidth() / remoteScreenSize.getWidth();
             double heightScale = localScreenSize.getHeight() / remoteScreenSize.getHeight();
@@ -75,8 +64,8 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
 
 
         // Création du panneau de contenu
-        contentPanel = new JPanel(new BorderLayout());
-        setContentPane(contentPanel);
+        contentPane = new JPanel(new BorderLayout());
+        setContentPane(contentPane);
 
         // Création du panneau supérieur pour le logo et le nom de l'application
         JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -85,7 +74,7 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
         appNameLabel.setFont(new Font("Arial", Font.BOLD, 24));
         topPanel.add(logoLabel);
         topPanel.add(appNameLabel);
-        contentPanel.add(topPanel, BorderLayout.NORTH);
+        contentPane.add(topPanel, BorderLayout.NORTH);
 
         // Création du panneau central pour le champ de saisie du mot de passe
         centerPanel = new JPanel();
@@ -118,7 +107,8 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
             }
         });
         centerPanel.add(connectButton);
-        contentPanel.add(centerPanel, BorderLayout.WEST);
+        contentPane.add(centerPanel, BorderLayout.WEST);
+
 
         // Création de la barre latérale à droite
         sidebarPanel = new JPanel();
@@ -130,13 +120,15 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
         instructionsArea.setLineWrap(true);
         instructionsArea.setWrapStyleWord(true);
         sidebarPanel.add(new JScrollPane(instructionsArea));
-        contentPanel.add(sidebarPanel, BorderLayout.EAST);
+        contentPane.add(sidebarPanel, BorderLayout.EAST);
 
         // Initialisation du sélecteur de fichiers
         fileChooser = new JFileChooser();
 
+
+        // Ajout des autres composants et fonctionnalités (rafraîchissement d'écran, gestion des événements, etc.)
         screenLabel = new JLabel();
-        screenLabel.add(contentPanel, BorderLayout.CENTER);
+        contentPane.add(screenLabel, BorderLayout.CENTER);
 
         // Menu pour le transfert de fichiers
         JMenuBar menuBar = new JMenuBar();
@@ -149,6 +141,16 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
         fileMenu.add(receiveFileMenuItem);
         menuBar.add(fileMenu);
         setJMenuBar(menuBar);
+
+
+        // Gestion des événements de souris et de clavier
+        addMouseListener(this);
+        addMouseMotionListener(this);
+        addKeyListener(this);
+
+        // Ajout d'un thread pour gérer la réception et la lecture de l'audio
+        new Thread(this::startAudioClient).start();
+
     }
 
     private boolean checkServerPassword(String password) throws RemoteException {
@@ -192,6 +194,28 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
 
         return new Point(remoteX, remoteY);
     }
+    private void startAudioClient() {
+        AudioFormat format = new AudioFormat(44100, 16, 2, true, true);
+        DataLine.Info info = new DataLine.Info(SourceDataLine.class, format);
+
+        try (SourceDataLine speakers = (SourceDataLine) AudioSystem.getLine(info)) {
+            speakers.open(format);
+            speakers.start();
+
+            while (true) {
+                byte[] audioChunk = server.captureAudioChunk();
+                ByteArrayInputStream bais = new ByteArrayInputStream(audioChunk);
+                int bytesRead;
+                byte[] buffer = new byte[4096];
+                while ((bytesRead = bais.read(buffer)) != -1) {
+                    speakers.write(buffer, 0, bytesRead);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     @Override
     public void keyPressed(KeyEvent e) {
         try {
@@ -214,7 +238,7 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
 
     @Override
     public void keyTyped(KeyEvent e) {
-        return;
+      return;
     }
 
     @Override
@@ -257,7 +281,6 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
 
     @Override
     public void mouseClicked(MouseEvent e) {
-        return;
     }
 
     @Override
@@ -302,6 +325,27 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
 
     @Override
     public void mouseExited(MouseEvent e) {
+    }
+
+
+    private void sendFileToServer() {
+        int result = fileChooser.showOpenDialog(this);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            try {
+                String filePath = fileChooser.getSelectedFile().getAbsolutePath();
+                sendFile(filePath);
+                JOptionPane.showMessageDialog(this, "File sent successfully!");
+            } catch (IOException ex) {
+                JOptionPane.showMessageDialog(this, "Error sending file: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                ex.printStackTrace();
+            }
+        }
+    }
+
+    public void sendFile(String filePath) throws RemoteException, IOException {
+        File file = new File(filePath);
+        byte[] fileData = Files.readAllBytes(Paths.get(file.getAbsolutePath()));
+        server.sendFile(fileData, file.getName());
     }
 
     private class SendFileAction implements ActionListener {

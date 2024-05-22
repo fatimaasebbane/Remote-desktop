@@ -1,9 +1,15 @@
 import javax.imageio.ImageIO;
+import javax.sound.sampled.*;
 import java.awt.*;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.text.SimpleDateFormat;
@@ -12,16 +18,18 @@ import java.util.Date;
 public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
     private Robot robot;
     private String password;
-
+    private TargetDataLine microphone;
     protected ServerImpl() throws RemoteException {
             try {
                 robot = new Robot();
                 generatePassword();
+                initMicrophone();
             } catch (Exception e) {
                 throw new RemoteException("Failed to initialize Robot", e);
             }
 
     }
+
     // Méthode pour générer un mot de passe aléatoire
     private void generatePassword() {
         StringBuilder sb = new StringBuilder();
@@ -68,6 +76,13 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
             return null;
         }
     }
+    private void initMicrophone() throws LineUnavailableException {
+        AudioFormat format = new AudioFormat(44100, 16, 2, true, true);
+        DataLine.Info info = new DataLine.Info(TargetDataLine.class, format);
+        microphone = (TargetDataLine) AudioSystem.getLine(info);
+        microphone.open(format);
+        microphone.start();
+    }
 
     @Override
     public void mousePressed(int button) throws RemoteException {
@@ -108,6 +123,13 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
         return Toolkit.getDefaultToolkit().getScreenSize();
     }
 
+    public void clickMouse(int x, int y) throws RemoteException {
+        robot.mouseMove(x, y);
+        robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
+        robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
+    }
+
+
     @Override
     public void keyPressed(int keyCode) throws RemoteException {
         robot.keyPress(keyCode);
@@ -127,7 +149,10 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
         robot.mouseMove(x, y);
     }
 
-
+    @Override
+    public void typeKey(char keyChar) throws RemoteException {
+       return;
+    }
 
     @Override
     public void sendFile(byte[] fileData, String fileName) throws RemoteException {
@@ -146,13 +171,21 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
     public byte[] receiveFile(String fileName) throws RemoteException {
         try {
             File file = new File(fileName);
-            byte[] fileData = new byte[(int) file.length()];
-            FileInputStream fis = new FileInputStream(file);
-            fis.read(fileData);
-            fis.close();
-            return fileData;
+            return Files.readAllBytes(Paths.get(file.getAbsolutePath()));
         } catch (IOException e) {
-            throw new RemoteException("Erreur lors de la lecture du fichier", e);
+            throw new RemoteException("Error reading file: " + e.getMessage());
         }
     }
+    @Override
+    public byte[] captureAudioChunk() throws RemoteException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        byte[] buffer = new byte[4096];
+        int bytesRead = microphone.read(buffer, 0, buffer.length);
+        if (bytesRead > 0) {
+            out.write(buffer, 0, bytesRead);
+        }
+        return out.toByteArray();
+    }
+
+
 }

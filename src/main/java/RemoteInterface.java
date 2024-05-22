@@ -4,6 +4,7 @@ import java.rmi.RemoteException;
 
 public interface RemoteInterface extends Remote {
     byte[] captureScreen() throws RemoteException;
+    void clickMouse(int x, int y) throws RemoteException;
     boolean checkPassword(String password) throws RemoteException;
     void mousePressed(int button) throws RemoteException;
     void mouseReleased(int button) throws RemoteException;
@@ -14,5 +15,7 @@ public interface RemoteInterface extends Remote {
     void sendFile(byte[] fileData, String fileName) throws RemoteException;
     byte[] receiveFile(String fileName) throws RemoteException;
     Dimension getScreenSize() throws RemoteException;
-
+    void typeKey(char keyChar) throws RemoteException;
+    // New methods for audio streaming
+    byte[] captureAudioChunk() throws RemoteException;
 }
