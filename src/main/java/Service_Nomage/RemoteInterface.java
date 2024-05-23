@@ -1,4 +1,4 @@
-package Service;
+package Service_Nomage;
 
 import java.awt.*;
 import java.rmi.Remote;
@@ -19,8 +19,5 @@ public interface RemoteInterface extends Remote {
     Dimension getScreenSize() throws RemoteException;
     void typeKey(char keyChar) throws RemoteException;
     byte[] captureAudioChunk() throws RemoteException;
-    boolean isPlayingMedia() throws RemoteException; // Nouvelle méthode
-    void setPlayingMedia(boolean playing) throws RemoteException;
-    boolean isMediaPlaying(byte[] buffer, int bytesRead)throws RemoteException;
 
 }

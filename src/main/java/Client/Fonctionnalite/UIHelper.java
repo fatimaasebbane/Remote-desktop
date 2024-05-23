@@ -4,14 +4,13 @@ import Client.ClientUI;
 
 import javax.swing.*;
 import java.awt.*;
-import java.rmi.RemoteException;
 
 public class UIHelper {
-    public static String serverPassword;
+
     private static JPanel contentPane;
     private static JPanel topPanel;
-    private static JPanel centerPanel;
     private static JPanel sidebarPanel;
+
     public static void setupUI(ClientUI clientUI) {
 
         Dimension localScreenSize = Toolkit.getDefaultToolkit().getScreenSize();
@@ -27,12 +26,11 @@ public class UIHelper {
 
         topPanel = createTopPanel();
         contentPane.add(topPanel, BorderLayout.NORTH);
-
-        centerPanel = createCenterPanel(clientUI);
-        contentPane.add(centerPanel, BorderLayout.WEST);
+        ClientUI.topPanel=topPanel;
 
         sidebarPanel = createSidebarPanel();
         contentPane.add(sidebarPanel, BorderLayout.EAST);
+        ClientUI.sidebarPanel=sidebarPanel;
 
         JLabel screenLabel = new JLabel();
         contentPane.add(screenLabel, BorderLayout.CENTER);
@@ -50,38 +48,6 @@ public class UIHelper {
         return topPanel;
     }
 
-    private static JPanel createCenterPanel(ClientUI clientUI) {
-        JPanel centerPanel = new JPanel();
-        centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
-        JLabel passwordLabel = new JLabel("Enter Service.Server Password:");
-        JTextField passwordField = new JTextField(20);
-        centerPanel.add(passwordLabel);
-        centerPanel.add(passwordField);
-        JButton connectButton = new JButton("Connect");
-        connectButton.setBackground(new Color(0, 153, 204));
-        connectButton.setForeground(Color.WHITE);
-        connectButton.setFocusPainted(false);
-        connectButton.addActionListener(e -> {
-            serverPassword = passwordField.getText();
-            try {
-                if (!clientUI.checkServerPassword(serverPassword)) {
-                    JOptionPane.showMessageDialog(clientUI, "Incorrect server password. Exiting...");
-                    System.exit(0);
-                } else {
-                    clientUI.startScreenRefresh();
-                    startAudio();
-                    topPanel.setVisible(false);
-                    centerPanel.setVisible(false);
-                    sidebarPanel.setVisible(false);
-                }
-            } catch (RemoteException ex) {
-                ex.printStackTrace();
-            }
-        });
-        centerPanel.add(connectButton);
-        return centerPanel;
-    }
-
     private static JPanel createSidebarPanel() {
         JPanel sidebarPanel = new JPanel();
         sidebarPanel.setLayout(new BoxLayout(sidebarPanel, BoxLayout.Y_AXIS));
@@ -93,17 +59,5 @@ public class UIHelper {
         instructionsArea.setWrapStyleWord(true);
         sidebarPanel.add(new JScrollPane(instructionsArea));
         return sidebarPanel;
-    }
-
-    private static void startAudio() {
-        try {
-            if (ClientUI.server.isPlayingMedia()) {
-                // Start audio only if the server is playing media
-                AudioClient audioClient = new AudioClient(ClientUI.server);
-                new Thread(audioClient).start();
-            }
-        } catch (RemoteException e) {
-            e.printStackTrace();
-        }
     }
 }

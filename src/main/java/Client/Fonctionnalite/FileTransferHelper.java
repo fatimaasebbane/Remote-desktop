@@ -1,6 +1,6 @@
 package Client.Fonctionnalite;
 
-import Service.RemoteInterface;
+import Service_Nomage.RemoteInterface;
 
 import javax.swing.*;
 import java.io.FileOutputStream;

@@ -1,4 +1,4 @@
-package Service;
+package Service_Nomage;
 
 import javax.imageio.ImageIO;
 import javax.sound.sampled.*;
@@ -21,28 +21,22 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
     private Robot robot;
     private String password;
     private TargetDataLine microphone;
-    private boolean isPlayingMedia = false;
 
-
-
-    protected ServerImpl() throws RemoteException {
+    public ServerImpl() throws RemoteException {
             try {
                 robot = new Robot();
                 generatePassword();
                 initMicrophone();
-                startMediaDetection();
             } catch (Exception e) {
                 throw new RemoteException("Failed to initialize Robot", e);
             }
     }
 
-    // Méthode pour générer un mot de passe aléatoire
     private void generatePassword() {
         StringBuilder sb = new StringBuilder();
         SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmssSSS");
         String timestamp = sdf.format(new Date());
 
-        // Ajouter des caractères alphanumérique au mot de passe
         for (int i = 0; i < timestamp.length(); i++) {
             char c = timestamp.charAt(i);
             if (Character.isDigit(c)) {
@@ -51,15 +45,12 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
                 sb.append(Character.toUpperCase(c));
             }
         }
-
-        // Ajouter des caractères spéciaux
         sb.append("!@#$%");
 
         password = sb.toString();
         System.out.printf("Password: %s\n", password);
     }
 
-    // Méthode pour vérifier le mot de passe
     @Override
     public boolean checkPassword(String inputPassword) {
         return inputPassword.equals(password);
@@ -68,11 +59,9 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
     @Override
     public byte[] captureScreen() throws RemoteException {
         try {
-            // Capture de l'écran à l'aide de la classe Robot
             Rectangle screenRect = new Rectangle(Toolkit.getDefaultToolkit().getScreenSize());
             BufferedImage screenImage = robot.createScreenCapture(screenRect);
 
-            // Convertir l'image en tableau d'octets pour l'envoyer via RMI
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             ImageIO.write(screenImage, "png", outputStream);
             return outputStream.toByteArray();
@@ -88,23 +77,6 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
         microphone = (TargetDataLine) AudioSystem.getLine(info);
         microphone.open(format);
         microphone.start();
-    }
-    private void startMediaDetection() {
-        new Thread(() -> {
-            byte[] buffer = new byte[4096];
-            while (true) {
-                int bytesRead = microphone.read(buffer, 0, buffer.length);
-                if (bytesRead > 0) {
-                    // Analyse the buffer to detect if media is playing
-                    boolean mediaPlaying = isMediaPlaying(buffer, bytesRead);
-                    try {
-                        setPlayingMedia(mediaPlaying);
-                    } catch (RemoteException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-        }).start();
     }
 
     @Override
@@ -206,27 +178,6 @@ public class ServerImpl extends UnicastRemoteObject implements RemoteInterface {
         } catch (IOException e) {
             throw new RemoteException("Error reading file: " + e.getMessage());
         }
-    }
-    @Override
-    public boolean isMediaPlaying(byte[] buffer, int bytesRead) {
-        // Simple heuristic: if the average volume level is above a threshold, assume media is playing
-        long sum = 0;
-        for (int i = 0; i < bytesRead; i += 2) {
-            int sample = (buffer[i + 1] << 8) | (buffer[i] & 0xFF);
-            sum += Math.abs(sample);
-        }
-        double average = sum / (bytesRead / 2.0);
-        return average > 1000;
-    }
-
-    @Override
-    public boolean isPlayingMedia() throws RemoteException {
-        return isPlayingMedia;
-    }
-
-    @Override
-    public void setPlayingMedia(boolean playing) throws RemoteException {
-        this.isPlayingMedia = playing;
     }
 
     @Override
