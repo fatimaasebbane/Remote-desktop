@@ -2,6 +2,7 @@ package Client;
 
 import Client.Fonctionnalite.FileTransferHelper;
 import Client.Fonctionnalite.UIHelper;
+import Securite.ClientPolicy;
 import Service_Nomage.RemoteInterface;
 import Service_Nomage.ServerImpl;
 import javax.imageio.ImageIO;
@@ -15,6 +16,7 @@ import java.net.UnknownHostException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.security.Policy;
 
 public class ClientUI extends JFrame implements KeyListener, MouseListener, MouseMotionListener {
     public static JPanel sidebarPanel,topPanel;
@@ -23,9 +25,15 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
     private JFileChooser fileChooser;
     JPanel panel = new JPanel();
     Timer timer;
-    Registry registry = LocateRegistry.getRegistry("localhost", 1099);
+    Registry registry;
 
     public ClientUI() throws RemoteException {
+
+        // Définir la politique de sécurité
+        Policy.setPolicy(new ClientPolicy());
+        System.setSecurityManager(new SecurityManager());
+        registry = LocateRegistry.getRegistry("localhost", 1099);
+
         fileChooser = new JFileChooser();
         initializeUI();
     }
@@ -34,7 +42,7 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
     private void initializeUI() {
         UIHelper.setupUI(this);
         setupMenuBar();
-        //registerAsServer();
+        registerAsServer();
         displayAvailableServers();
     }
 
