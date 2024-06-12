@@ -8,7 +8,17 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+/**
+ * FileTransferHelper est une classe utilitaire pour gérer l'envoi et la réception de fichiers entre le client et le serveur.
+ */
 public class FileTransferHelper {
+    /**
+     * Envoie un fichier sélectionné par l'utilisateur au serveur.
+     *
+     * @param parentFrame le cadre parent pour afficher les dialogues
+     * @param fileChooser le sélecteur de fichiers pour choisir le fichier à envoyer
+     * @param server l'interface distante du serveur pour envoyer le fichier
+     */
     public static void sendFile(JFrame parentFrame, JFileChooser fileChooser, RemoteInterface server) {
         int result = fileChooser.showOpenDialog(parentFrame);
         if (result == JFileChooser.APPROVE_OPTION) {
@@ -24,6 +34,13 @@ public class FileTransferHelper {
         }
     }
 
+    /**
+     * Reçoit un fichier du serveur et le sauvegarde à un emplacement choisi par l'utilisateur.
+     *
+     * @param parentFrame le cadre parent pour afficher les dialogues
+     * @param fileChooser le sélecteur de fichiers pour choisir l'emplacement de sauvegarde
+     * @param server l'interface distante du serveur pour recevoir le fichier
+     */
     public static void receiveFile(JFrame parentFrame, JFileChooser fileChooser, RemoteInterface server) {
         int result = fileChooser.showSaveDialog(parentFrame);
         if (result == JFileChooser.APPROVE_OPTION) {

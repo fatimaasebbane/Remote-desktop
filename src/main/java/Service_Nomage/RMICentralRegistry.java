@@ -3,7 +3,16 @@ package Service_Nomage;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 
+
+/**
+ * Classe pour démarrer le registre RMI central.
+ */
 public class RMICentralRegistry {
+    /**
+     * Méthode principale pour démarrer le registre RMI central sur le port 1099.
+     *
+     * @param args les arguments de la ligne de commande (non utilisés).
+     */
     public static void main(String[] args) {
         try {
             // Démarrer le registre RMI sur le port 1099

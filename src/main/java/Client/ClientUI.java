@@ -1,8 +1,8 @@
 package Client;
 
+import Client.Fonctionnalite.AudioClient;
 import Client.Fonctionnalite.FileTransferHelper;
 import Client.Fonctionnalite.UIHelper;
-import Securite.ClientPolicy;
 import Service_Nomage.RemoteInterface;
 import Service_Nomage.ServerImpl;
 import javax.imageio.ImageIO;
@@ -16,53 +16,204 @@ import java.net.UnknownHostException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
-import java.security.Policy;
 
+/**
+ * ClientUI est la classe principale pour l'interface utilisateur du client.
+ * Elle permet à l'utilisateur d'agir comme un serveur ou de se connecter à un serveur.
+ */
 public class ClientUI extends JFrame implements KeyListener, MouseListener, MouseMotionListener {
-    public static JPanel sidebarPanel,topPanel;
+    public static JPanel sidebarPanel, topPanel;
     public JLabel screenLabel;
     public static RemoteInterface selectedServer;
     private JFileChooser fileChooser;
-    JPanel panel = new JPanel();
-    Timer timer;
-    Registry registry;
+    private JPanel panel = new JPanel();
+    private Timer timer;
+    private Registry registry;
+    private String password;
 
+    /**
+     * Constructeur pour ClientUI.
+     * @throws RemoteException en cas d'échec de la connexion au registre RMI.
+     */
     public ClientUI() throws RemoteException {
-
-        // Définir la politique de sécurité
-        Policy.setPolicy(new ClientPolicy());
-        System.setSecurityManager(new SecurityManager());
         registry = LocateRegistry.getRegistry("localhost", 1099);
-
         fileChooser = new JFileChooser();
         initializeUI();
     }
 
-
+    /**
+     * Initialise l'interface utilisateur.
+     */
     private void initializeUI() {
-        UIHelper.setupUI(this);
-        setupMenuBar();
-        registerAsServer();
-        displayAvailableServers();
+        setTitle("RemoteDesk");
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setLayout(new BorderLayout());
+
+        JPanel choicePanel = new JPanel();
+        choicePanel.setLayout(new BoxLayout(choicePanel, BoxLayout.Y_AXIS));
+        choicePanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+
+        JLabel choiceLabel = new JLabel("Choisissez votre role:");
+        choiceLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        choicePanel.add(choiceLabel);
+
+        JButton actAsServerButton = new JButton("Act as Server");
+        actAsServerButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        actAsServerButton.addActionListener(e -> actAsServer());
+        choicePanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        choicePanel.add(actAsServerButton);
+
+        JButton connectToServerButton = new JButton("Connect to Server");
+        connectToServerButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        connectToServerButton.addActionListener(e -> connectToServer());
+        choicePanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        choicePanel.add(connectToServerButton);
+
+        getContentPane().add(choicePanel, BorderLayout.CENTER);
+        pack();
+        setLocationRelativeTo(null);
+        setVisible(true);
     }
 
+    /**
+     * Permet à l'utilisateur d'agir comme serveur.
+     */
+    private void actAsServer() {
+        try {
+            registerAsServer();
+            getContentPane().removeAll();
+            UIHelper.setupUI(this);
+            // Modifier le contenu de la barre latérale
+            updateSidebarForServerMode();
+            //le bouton pour arrêter le serveur
+            addStopServerButton();
+            // le panneau vide pour pousser le contenu vers la droite
+            JPanel leftEmptyPanel = new JPanel();
+            leftEmptyPanel.setPreferredSize(new Dimension(100, 0));
+
+            // le JPanel pour contenir le texte et le mot de passe
+            JPanel centerPanel = new JPanel();
+            centerPanel.setLayout(new BoxLayout(centerPanel, BoxLayout.Y_AXIS));
+
+            // Ajouter le texte au centre de la page
+            JLabel centerLabel = new JLabel("Voici le mot de passe généré pour le client.");
+            centerLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            centerLabel.setVerticalAlignment(SwingConstants.CENTER);
+            centerLabel.setFont(new Font("Arial", Font.BOLD, 18));
+            centerPanel.add(centerLabel);
+
+             // Ajout de l'espace vertical
+            centerPanel.add(Box.createVerticalStrut(80));
+
+            // Récupération et affichage de mot de passe généré par le serveur
+            JLabel passwordLabel = new JLabel(password);
+            passwordLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            passwordLabel.setVerticalAlignment(SwingConstants.CENTER);
+            passwordLabel.setFont(new Font("Arial", Font.BOLD, 50));
+            centerPanel.add(passwordLabel);
+
+            // le panneau principal
+            JPanel mainPanel = new JPanel(new BorderLayout());
+            mainPanel.add(leftEmptyPanel, BorderLayout.WEST);
+            mainPanel.add(centerPanel, BorderLayout.CENTER);
+            getContentPane().add(mainPanel, BorderLayout.CENTER);
+            revalidate();
+            repaint();
+        } catch (Exception e) {
+            System.err.println("Error setting up as server: " + e.toString());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Connecte l'utilisateur à un serveur.
+     */
+    private void connectToServer() {
+        try {
+            getContentPane().removeAll();
+            UIHelper.setupUI(this);
+            displayAvailableServers();
+            revalidate();
+            repaint();
+        } catch (Exception e) {
+            System.err.println("Error displaying available servers: " + e.toString());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Met à jour la barre latérale pour le mode serveur.
+     */
+    private void updateSidebarForServerMode() {
+        ClientUI.sidebarPanel.removeAll();
+        JLabel serverStatusLabel = new JLabel("Le serveur est en cours d'exécution...");
+        Font font = new Font("Arial", Font.BOLD, 18); // Modifier la police ici
+        serverStatusLabel.setFont(font);
+        ClientUI.sidebarPanel.add(serverStatusLabel);
+
+        JTextArea serverInstructionsArea = new JTextArea("\n \n 1. Donnez le mot de passe généré au client.\n\n 2. Le client doit se connecter à cette votre bureaux à l'aide de ce password.");
+        serverInstructionsArea.setEditable(false);
+        serverInstructionsArea.setLineWrap(true);
+        serverInstructionsArea.setWrapStyleWord(true);
+        Font sidebarFont = new Font("Arial", Font.PLAIN, 17);
+        serverInstructionsArea.setFont(sidebarFont);
+        ClientUI.sidebarPanel.add(new JScrollPane(serverInstructionsArea));
+    }
+
+
+    /**
+     * Ajoute un bouton pour arrêter le serveur.
+     */
+    private void addStopServerButton() {
+        JButton stopServerButton = new JButton("Arrêter le serveur");
+        stopServerButton.setAlignmentX(Component.CENTER_ALIGNMENT);
+        stopServerButton.addActionListener(e -> stopServer());
+        sidebarPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        sidebarPanel.add(stopServerButton);
+    }
+
+    /**
+     * Arrête le serveur.
+     */
+    private void stopServer() {
+        try {
+            registry.unbind("client_" + getClientIPAddress());
+            System.out.println("Le serveur a été arrêté.");
+            JOptionPane.showMessageDialog(this, "Le serveur a été arrêté.", "Serveur arrêté", JOptionPane.INFORMATION_MESSAGE);
+            System.exit(0);
+        } catch (Exception e) {
+            System.err.println("Error stopping server: " + e.toString());
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Enregistre le client en tant que serveur.
+     */
     private void registerAsServer() {
         try {
-            // Créez une instance de votre implémentation distante ServerImpl
             RemoteInterface serverImpl = new ServerImpl();
-            registry.bind("client_" + getClientIPAddress(), serverImpl);
+            registry.rebind("client_" + getClientIPAddress(), serverImpl);
             System.out.println("Client registered as server.");
+            password = serverImpl.generatePassword();
         } catch (Exception e) {
             System.err.println("Error registering client as server: " + e.toString());
             e.printStackTrace();
         }
     }
 
+    /**
+     * Obtient l'adresse IP du client.
+     * @return l'adresse IP du client.
+     * @throws UnknownHostException en cas d'échec de la résolution de l'adresse IP.
+     */
     private String getClientIPAddress() throws UnknownHostException {
-        String hostName = InetAddress.getLocalHost().getHostName();
-        return hostName;
+        return InetAddress.getLocalHost().getHostName();
     }
 
+    /**
+     * Affiche les serveurs disponibles.
+     */
     private void displayAvailableServers() {
         try {
             String[] serverNames = registry.list();
@@ -70,6 +221,8 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
             panel.setBorder(BorderFactory.createEmptyBorder(20, 10, 10, 10));
 
             JLabel label = new JLabel("Liste des serveurs disponibles :");
+            Font font = new Font("Arial", Font.BOLD, 20);
+            label.setFont(font);
             label.setAlignmentX(Component.CENTER_ALIGNMENT);
             panel.add(label);
 
@@ -84,7 +237,7 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
             panel.add(Box.createRigidArea(new Dimension(0, 10)));
             panel.add(serverList);
 
-            getContentPane().add(panel, BorderLayout.NORTH);
+            getContentPane().add(panel, BorderLayout.EAST);
             revalidate();
             repaint();
         } catch (Exception e) {
@@ -93,6 +246,10 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
         }
     }
 
+    /**
+     * Connecte l'utilisateur au serveur sélectionné.
+     * @param selectedServerName le nom du serveur sélectionné.
+     */
     private void connectToSelectedServer(String selectedServerName) {
         try {
             selectedServer = (RemoteInterface) registry.lookup(selectedServerName);
@@ -102,9 +259,13 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
             e.printStackTrace();
         }
     }
-    private void check(){
+
+    /**
+     * Vérifie la permission du serveur.
+     */
+    private void check() {
         if (!requestPermission()) {
-            JOptionPane.showMessageDialog(this,"Incorrect server password. Exiting...");
+            JOptionPane.showMessageDialog(this, "Incorrect server password. Exiting...");
             System.exit(0);
         } else {
             sidebarPanel.setVisible(false);
@@ -112,11 +273,25 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
             panel.setVisible(false);
             startScreenRefresh();
             addEventListeners();
+            setupMenuBar();
             //startAudio();
         }
     }
+    /**
+     * Démarre l'audio.
+     */
+    private void startAudio() {
+        AudioClient audioClient = new AudioClient(selectedServer);
+        Thread audioThread = new Thread(audioClient);
+        audioThread.start();
+    }
+
+    /**
+     * Demande la permission du serveur en vérifiant le mot de passe.
+     * @return true si le mot de passe est correct, sinon false.
+     */
     public boolean requestPermission() {
-        String password = JOptionPane.showInputDialog(this, "Enter password for server :");
+        String password = JOptionPane.showInputDialog(this, "Enter password for server:");
         try {
             return selectedServer.checkPassword(password);
         } catch (RemoteException e) {
@@ -126,6 +301,9 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
         }
     }
 
+    /**
+     * Démarre le rafraîchissement de l'écran à intervalles réguliers.
+     */
     public void startScreenRefresh() {
         ActionListener taskPerformer = new ActionListener() {
             public void actionPerformed(ActionEvent evt) {
@@ -153,7 +331,9 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
             e.printStackTrace();
         }
     }
-
+    /**
+     * Configure la barre de menu.
+     */
     private void setupMenuBar() {
         JMenuBar menuBar = new JMenuBar();
         JMenu fileMenu = new JMenu("Menu");
@@ -167,13 +347,18 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
         setJMenuBar(menuBar);
     }
 
-
+    /**
+     * Ajoute les écouteurs d'événements de souris et de clavier.
+     */
     private void addEventListeners() {
         addMouseListener(this);
         addMouseMotionListener(this);
         addKeyListener(this);
     }
 
+    /**
+     * ActionListener pour l'envoi de fichier.
+     */
     private class SendFileAction implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
@@ -181,6 +366,9 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
         }
     }
 
+    /**
+     * ActionListener pour la réception de fichier.
+     */
     private class ReceiveFileAction implements ActionListener {
         @Override
         public void actionPerformed(ActionEvent e) {
@@ -188,6 +376,13 @@ public class ClientUI extends JFrame implements KeyListener, MouseListener, Mous
         }
     }
 
+    /**
+     * Mappe la position locale du curseur à la position distante.
+     * @param localCursor la position locale du curseur.
+     * @param localScreen la dimension de l'écran local.
+     * @param remoteScreen la dimension de l'écran distant.
+     * @return la position distante du curseur.
+     */
     private Point mapLocalToRemoteCursor(Point localCursor, Dimension localScreen, Dimension remoteScreen) {
         double relativeX = (double) localCursor.x / localScreen.width;
         double relativeY = (double) localCursor.y / localScreen.height;
